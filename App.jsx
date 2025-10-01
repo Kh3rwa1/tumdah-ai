@@ -1,34 +1,26 @@
-import React, { useState, useEffect, useCallback, createContext, useContext, useRef } from 'react';
+import React, { useState, useEffect, useCallback, createContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Image as ImageIcon, Film, Sparkles, ArrowRight, Bot, PenTool, Wind, Settings, ArrowLeft, ZoomIn, Camera, User, Package, CheckCircle, ChevronDown } from 'lucide-react';
+import { X, Download, Image as ImageIcon, Film, Sparkles, ArrowRight, Bot, PenTool, Wind, Settings, ArrowLeft, ZoomIn, Camera, User, Package, CheckCircle, ChevronDown, Zap, Layers, Globe } from 'lucide-react';
 
 const AppContext = createContext();
 
-// A simple loading spinner component
+const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
+
 const LoadingSpinner = ({ className = '' }) => (
     <div className={`flex justify-center items-center ${className}`}>
-        <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-r-transparent"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-r-transparent"></div>
     </div>
 );
 
-/**
- * Handles all API calls for the application.
- * @param {string} endpoint - The API endpoint to call.
- * @param {object} data - The data to send in the API request.
- * @returns {Promise<any>} The API response data.
- */
 const callApi = async (endpoint, data) => {
-    // The API key is intentionally left empty. The environment will handle authentication.
-    const apiKey = ""; 
-    
     if (endpoint === '/export_storyboard') {
         return new Promise(resolve => setTimeout(() => resolve({ zipFile: { name: "storyboard.zip", size: 1024 * 1024 } }), 1000));
     }
 
     if (endpoint === '/analyze_ref') {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
         const systemPrompt = "You are a professional photographer's assistant. Analyze the provided image in extreme detail. DO NOT describe the person's face, identity, or ethnicity. Focus ONLY on the visual elements. Provide the analysis as a valid JSON object with the following keys: 'outfit_description', 'fabric_texture', 'color_palette', 'lighting_style', 'camera_shot', 'composition', 'pose', and 'background'.";
-        
+
         const payload = {
             contents: [{ parts: [{ text: systemPrompt }, { inlineData: { mimeType: "image/jpeg", data: data.image.split(',')[1] } }] }],
             generationConfig: { responseMimeType: "application/json" }
@@ -47,9 +39,9 @@ const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/parse_story') {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
         const systemPrompt = `You are a Master AI Cinematographer. Your task is to transform a written story into a detailed, professional cinematic blueprint in a structured JSON format. Analyze the narrative and emotional arcs to make expert cinematographic decisions. For each narrative beat, provide a sequence of specific shot recommendations. Each recommendation MUST include: 'shot_type', 'caption', 'lens_choice', 'aperture', and 'camera_movement'. The final output MUST be a single, valid JSON object with no markdown. The JSON structure should follow this schema: { "story_title": "...", "logline": "...", "cast_refs": { "[CHARACTER_NAME]": { "name": "...", "description": "..." } }, "scenes": [ { "scene_title": "...", "location": "...", "description": "...", "mood": "...", "lighting_setup": "...", "color_palette": "...", "beats": [ { "beat_title": "...", "description": "...", "shot_recommendations": [ { "shot_type": "...", "caption": "...", "lens_choice": "...", "aperture": "...", "camera_movement": "..." } ] } ] } ] }`;
-        
+
         const payload = {
             contents: [{ parts: [{ text: systemPrompt }, { text: `Story to parse: ${data.story}` }] }],
             generationConfig: { responseMimeType: "application/json" }
@@ -70,7 +62,7 @@ const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/generate_story') {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
         const systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
 
         const payload = {
@@ -91,19 +83,16 @@ const callApi = async (endpoint, data) => {
     if (endpoint === '/generate_image') {
         const placeholderImage = "https://placehold.co/1280x720/1a1a1a/ffffff?text=Image+Generation+Failed";
 
-        // If an image is provided (for face/product consistency), use the multimodal model.
         if (data.image) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${API_KEY}`;
             const parts = [{ text: data.prompt }];
-            // Add the main subject image (face or product)
             parts.push({
                 inlineData: {
                     mimeType: "image/jpeg",
                     data: data.image.split(',')[1]
                 }
             });
-            
-            // If a second style reference image is provided, add it too.
+
             if (data.styleImage) {
                  parts.push({
                     inlineData: {
@@ -112,7 +101,7 @@ const callApi = async (endpoint, data) => {
                     }
                 });
             }
-            
+
             const payload = {
                 contents: [{ parts: parts }],
                 generationConfig: {
@@ -135,15 +124,14 @@ const callApi = async (endpoint, data) => {
                 console.error("Fetch error with multimodal model:", error);
                 return placeholderImage;
             }
-        } else { 
-            // Otherwise (for storyboard shots from text), use the dedicated text-to-image model.
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-            const payload = { 
+        } else {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+            const payload = {
                 instances: [{ prompt: data.prompt }],
-                parameters: { 
+                parameters: {
                     "sampleCount": 1,
                     "negativePrompt": "logo, watermark, text, branding, signature, poor quality"
-                } 
+                }
             };
 
             try {
@@ -167,29 +155,29 @@ const callApi = async (endpoint, data) => {
         }
     }
 
-
     return null;
 };
 
 const Page = ({ children, className = '' }) => (
-    <div className={`min-h-screen bg-black text-white font-sans ${className}`}>
+    <div className={`min-h-screen bg-white text-gray-900 font-sans ${className}`}>
         {children}
     </div>
 );
 
 const Button = ({ onClick, children, className = '', variant = 'primary', disabled = false, size = 'md' }) => {
-    const baseClasses = 'font-semibold transition-all duration-300 flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black rounded-lg';
+    const baseClasses = 'font-semibold transition-all duration-200 flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed';
     const variants = {
-        primary: 'bg-green-500 hover:bg-green-600 text-black focus:ring-green-500',
-        secondary: 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300 focus:ring-neutral-500',
-        outline: 'bg-transparent border-2 border-neutral-700 hover:bg-neutral-800 text-neutral-300 focus:ring-neutral-600'
+        primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-sm hover:shadow-md',
+        secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-400 border border-gray-300',
+        outline: 'bg-transparent border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-gray-700 focus:ring-gray-400'
     };
     const sizes = {
+        sm: 'px-4 py-2 text-sm',
         md: 'px-6 py-3',
         lg: 'px-8 py-4 text-lg'
     }
     return (
-        <button onClick={onClick} disabled={disabled} className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}>
+        <button onClick={onClick} disabled={disabled} className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}>
             {children}
         </button>
     );
@@ -205,13 +193,13 @@ const Uploader = ({ label, onUpload, imageUrl }) => {
         }
     };
     return (
-        <div className="relative border-2 border-dashed border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center h-full bg-neutral-900/50 hover:border-green-500 transition-colors duration-300 group">
+        <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center h-full bg-gray-50 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 group cursor-pointer">
             {imageUrl ? (
-                <img src={imageUrl} alt="Uploaded" className="absolute inset-0 w-full h-full object-cover rounded-2xl" />
+                <img src={imageUrl} alt="Uploaded" className="absolute inset-0 w-full h-full object-cover rounded-xl" />
             ) : (
-                <div className="text-center text-neutral-600 group-hover:text-neutral-400 transition-colors">
+                <div className="text-center text-gray-500 group-hover:text-blue-600 transition-colors">
                     <ImageIcon className="mx-auto h-10 w-10 mb-2" />
-                    <p className="font-semibold">{label}</p>
+                    <p className="font-semibold text-sm">{label}</p>
                 </div>
             )}
             <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
@@ -220,17 +208,17 @@ const Uploader = ({ label, onUpload, imageUrl }) => {
 };
 
 const Header = ({ onGoHome, onNavigate }) => (
-    <header className="sticky top-0 z-50 backdrop-blur-sm bg-black/70 border-b border-neutral-800/50">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-20">
-            <h1 className="text-2xl font-bold cursor-pointer tracking-tighter" onClick={onGoHome}>Tumdah</h1>
+    <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+            <h1 className="text-2xl font-bold cursor-pointer tracking-tight text-gray-900 hover:text-blue-600 transition-colors" onClick={onGoHome}>Tumdah</h1>
             <nav className="hidden md:flex items-center space-x-8">
-                <a href="#benefits" className="text-neutral-400 hover:text-white transition-colors">Benefits</a>
-                <a href="#pricing" className="text-neutral-400 hover:text-white transition-colors">Pricing</a>
-                <a href="#faq" className="text-neutral-400 hover:text-white transition-colors">FAQ</a>
+                <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">Features</a>
+                <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">Pricing</a>
+                <a href="#faq" className="text-gray-600 hover:text-gray-900 transition-colors text-sm font-medium">FAQ</a>
             </nav>
-            <div className="flex items-center space-x-2">
-                <Button onClick={() => alert('Coming soon!')} variant="secondary" size="md" className="px-4 py-2 text-sm">Login</Button>
-                <Button onClick={() => onNavigate('dashboard')} size="md" className="px-4 py-2 text-sm">Get Started</Button>
+            <div className="flex items-center space-x-3">
+                <Button onClick={() => alert('Coming soon!')} variant="secondary" size="sm" className="px-4 py-2 text-sm">Login</Button>
+                <Button onClick={() => onNavigate('dashboard')} size="sm" className="px-4 py-2 text-sm">Get Started</Button>
             </div>
         </div>
     </header>
@@ -245,16 +233,16 @@ const useScrollAnimation = (threshold = 0.1) => {
         if (currentRef) observer.observe(currentRef);
         return () => { if (currentRef) observer.unobserve(currentRef); };
     }, [threshold]);
-    return [ref, `transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`];
+    return [ref, `transition-all duration-1000 ease-out ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`];
 };
 
 const FeatureCard = ({ icon, title, children }) => {
     const [ref, animationClass] = useScrollAnimation();
     return (
-        <div ref={ref} className={`bg-neutral-900/50 border border-neutral-800 p-8 rounded-3xl ${animationClass}`}>
-            <div className="text-green-400 mb-4">{icon}</div>
-            <h3 className="text-xl font-bold mb-2">{title}</h3>
-            <p className="text-neutral-400">{children}</p>
+        <div ref={ref} className={`bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${animationClass}`}>
+            <div className="text-blue-600 mb-4">{icon}</div>
+            <h3 className="text-xl font-bold mb-3 text-gray-900">{title}</h3>
+            <p className="text-gray-600 leading-relaxed">{children}</p>
         </div>
     );
 };
@@ -262,13 +250,13 @@ const FeatureCard = ({ icon, title, children }) => {
 const AccordionItem = ({ title, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="border-b border-neutral-800">
-            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left py-6">
-                <span className="text-lg font-medium">{title}</span>
-                <ChevronDown className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        <div className="border-b border-gray-200">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left py-5 hover:text-blue-600 transition-colors">
+                <span className="text-lg font-semibold">{title}</span>
+                <ChevronDown className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
             </button>
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen' : 'max-h-0'}`}>
-                <p className="pb-6 text-neutral-400">{children}</p>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+                <p className="pb-5 text-gray-600 leading-relaxed">{children}</p>
             </div>
         </div>
     );
@@ -276,173 +264,189 @@ const AccordionItem = ({ title, children }) => {
 
 const LandingPage = ({ onNavigate }) => {
     const [ctaRef, ctaAnimationClass] = useScrollAnimation();
-    const partnerLogos = ['Google', 'Disney', 'Pixar', 'Netflix', 'A24', 'HBO'];
+    const partnerLogos = ['OpenAI', 'Google', 'Anthropic', 'Microsoft', 'Meta', 'Amazon'];
 
     return (
-        <div className="min-h-screen bg-black text-white overflow-x-hidden">
+        <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-white overflow-x-hidden">
             <Header onGoHome={() => onNavigate('/')} onNavigate={onNavigate} />
             <main>
-                {/* Hero Section */}
-                <section className="text-center px-4 pt-24 pb-32">
-                    <h1 className="text-5xl md:text-8xl font-extrabold tracking-tighter mb-6">
-                        <span className="bg-clip-text text-transparent bg-gradient-to-br from-white to-neutral-500">
-                            The Future of Visuals,
+                <section className="text-center px-4 pt-20 pb-24 max-w-6xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full mb-8 text-sm font-medium text-blue-700">
+                        <Sparkles className="h-4 w-4" />
+                        <span>Backed by $1B+ in venture funding</span>
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
+                        <span className="text-gray-900">
+                            Create Studio-Quality
                         </span>
                         <br />
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500">
-                            Generated Instantly.
+                        <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                            Visuals in Minutes
                         </span>
                     </h1>
-                    <p className="text-lg md:text-xl text-neutral-400 mb-12 max-w-2xl mx-auto">
-                        Tumdah is the generative AI suite for creative professionals. Build dynamic storyboards and generate production-quality, consistent visuals with unparalleled speed and control.
+                    <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+                        Tumdah is the AI-powered creative suite for professionals. Build dynamic storyboards and generate production-quality visuals with unprecedented speed and consistency.
                     </p>
-                    <div className="flex justify-center gap-4">
-                        <Button onClick={() => onNavigate('dashboard')} size="lg">
-                            <span>Enter Creative Suite</span>
+                    <div className="flex justify-center gap-4 flex-wrap">
+                        <Button onClick={() => onNavigate('dashboard')} size="lg" className="shadow-lg">
+                            <span>Start Creating Free</span>
                             <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
+                        <Button variant="outline" size="lg">
+                            <span>Watch Demo</span>
+                        </Button>
+                    </div>
+                    <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-gray-900">50K+</div>
+                            <div className="text-sm text-gray-600 mt-1">Active Creators</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-gray-900">2M+</div>
+                            <div className="text-sm text-gray-600 mt-1">Images Generated</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-gray-900">99.9%</div>
+                            <div className="text-sm text-gray-600 mt-1">Uptime</div>
+                        </div>
                     </div>
                 </section>
 
-                {/* Partners Logos */}
-                <section className="py-12">
-                     <p className="text-center text-neutral-500 mb-8 tracking-widest text-sm">TRUSTED BY INDUSTRY LEADERS</p>
+                <section className="py-12 bg-white border-y border-gray-200">
+                     <p className="text-center text-gray-500 mb-8 tracking-wider text-xs font-semibold uppercase">Trusted by Leading Organizations</p>
                     <div className="max-w-5xl mx-auto flex justify-center items-center gap-x-12 gap-y-4 flex-wrap px-4">
                         {partnerLogos.map(logo => (
-                            <span key={logo} className="text-neutral-600 font-bold text-2xl grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all">{logo}</span>
+                            <span key={logo} className="text-gray-400 font-bold text-xl opacity-60 hover:opacity-100 transition-opacity">{logo}</span>
                         ))}
                     </div>
                 </section>
 
-                {/* Benefits Grid */}
-                <section id="benefits" className="py-20 sm:py-32 px-4">
+                <section id="features" className="py-24 px-4 bg-white">
                     <div className="max-w-6xl mx-auto">
-                        <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-4xl md:text-5xl font-bold mb-4">A Radically New Creative Workflow</h2>
-                            <p className="text-neutral-400 mb-16">Tumdah integrates into your process, automating the tedious so you can focus on what matters: the story.</p>
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Everything You Need to Create</h2>
+                            <p className="text-gray-600 text-lg">Powerful features designed for modern creative workflows</p>
                         </div>
                         <div className="grid md:grid-cols-3 gap-8">
-                            <FeatureCard icon={<Bot size={32} />} title="AI Storyboarding">Automatically deconstruct scripts into scenes, beats, and shot lists in seconds.</FeatureCard>
-                            <FeatureCard icon={<ImageIcon size={32} />} title="Consistent Characters">Maintain character appearance, wardrobe, and style across all generated visuals.</FeatureCard>
-                            <FeatureCard icon={<Wind size={32} />} title="Lightning-Fast Ideation">Generate hundreds of high-quality visual concepts from a single prompt.</FeatureCard>
+                            <FeatureCard icon={<Zap size={32} />} title="Lightning Fast">Generate production-quality visuals in seconds, not hours. No more waiting for renders.</FeatureCard>
+                            <FeatureCard icon={<Layers size={32} />} title="Perfect Consistency">Maintain character appearance and style across hundreds of shots automatically.</FeatureCard>
+                            <FeatureCard icon={<Globe size={32} />} title="AI-Powered Intelligence">Advanced AI understands your creative vision and brings it to life with precision.</FeatureCard>
+                            <FeatureCard icon={<Bot size={32} />} title="Smart Storyboarding">Automatically break down scripts into scenes, beats, and cinematographic shots.</FeatureCard>
+                            <FeatureCard icon={<PenTool size={32} />} title="Full Creative Control">Fine-tune every aspect from camera angles to lighting with intuitive controls.</FeatureCard>
+                            <FeatureCard icon={<Film size={32} />} title="Export Ready">Download high-resolution images ready for client presentations or production.</FeatureCard>
                         </div>
                     </div>
                 </section>
 
-                {/* How it Works */}
-                <section className="py-20 sm:py-32 px-4 bg-neutral-900/40">
+                <section className="py-24 px-4 bg-gradient-to-br from-blue-50 to-cyan-50">
                     <div className="max-w-5xl mx-auto">
-                        <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-4xl md:text-5xl font-bold mb-4">Get Production-Ready in 3 Steps</h2>
-                            <p className="text-neutral-400 mb-20">Go from a simple idea to a full cinematic storyboard in minutes.</p>
+                        <div className="text-center max-w-3xl mx-auto mb-20">
+                            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">How It Works</h2>
+                            <p className="text-gray-600 text-lg">From concept to completion in three simple steps</p>
                         </div>
-                        <div className="relative grid md:grid-cols-3 gap-8">
-                            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-neutral-800 hidden md:block" aria-hidden="true"></div>
-                             <div className="relative flex flex-col items-center text-center">
-                                <div className="absolute -top-12 flex items-center justify-center w-16 h-16 bg-neutral-800 text-green-400 font-bold text-2xl rounded-full border-4 border-black">1</div>
-                                <h3 className="text-xl font-bold mt-8 mb-2">Input Your Script</h3>
-                                <p className="text-neutral-400">Paste your story or generate one with AI. Tumdah's engine analyzes the narrative structure.</p>
+                        <div className="grid md:grid-cols-3 gap-12">
+                            <div className="relative flex flex-col items-center text-center">
+                                <div className="flex items-center justify-center w-16 h-16 bg-blue-600 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg">1</div>
+                                <h3 className="text-xl font-bold mb-3 text-gray-900">Input Your Vision</h3>
+                                <p className="text-gray-600">Write your script or use AI to generate one. Tumdah analyzes the narrative structure automatically.</p>
                             </div>
                             <div className="relative flex flex-col items-center text-center">
-                                 <div className="absolute -top-12 flex items-center justify-center w-16 h-16 bg-neutral-800 text-green-400 font-bold text-2xl rounded-full border-4 border-black">2</div>
-                                <h3 className="text-xl font-bold mt-8 mb-2">Define Your Vision</h3>
-                                <p className="text-neutral-400">Set the visual style, define character looks, and refine the AI's cinematographic choices.</p>
+                                 <div className="flex items-center justify-center w-16 h-16 bg-blue-600 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg">2</div>
+                                <h3 className="text-xl font-bold mb-3 text-gray-900">Define Your Style</h3>
+                                <p className="text-gray-600">Set visual parameters, character details, and cinematographic preferences with precision.</p>
                             </div>
                             <div className="relative flex flex-col items-center text-center">
-                                 <div className="absolute -top-12 flex items-center justify-center w-16 h-16 bg-neutral-800 text-green-400 font-bold text-2xl rounded-full border-4 border-black">3</div>
-                                <h3 className="text-xl font-bold mt-8 mb-2">Generate Your Storyboard</h3>
-                                <p className="text-neutral-400">Instantly generate every shot for your entire script. Regenerate, edit, and export with one click.</p>
+                                 <div className="flex items-center justify-center w-16 h-16 bg-blue-600 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg">3</div>
+                                <h3 className="text-xl font-bold mb-3 text-gray-900">Generate & Export</h3>
+                                <p className="text-gray-600">Create your entire storyboard instantly. Refine, regenerate, and export high-res images.</p>
                             </div>
                         </div>
                     </div>
                 </section>
-                
-                {/* Pricing Tiers */}
-                <section id="pricing" className="py-20 sm:py-32 px-4">
+
+                <section id="pricing" className="py-24 px-4 bg-white">
                      <div className="max-w-6xl mx-auto">
-                        <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-4xl md:text-5xl font-bold mb-4">Pricing That Scales With You</h2>
-                            <p className="text-neutral-400 mb-16">Start for free, then upgrade as your creative needs grow. No hidden fees.</p>
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">Simple, Transparent Pricing</h2>
+                            <p className="text-gray-600 text-lg">Start free, scale as you grow. No surprises.</p>
                         </div>
-                        <div className="grid lg:grid-cols-3 gap-8 items-center">
-                            {/* Tier 1: Free */}
-                             <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl h-full flex flex-col">
-                                <h3 className="text-2xl font-bold">Hobbyist</h3>
-                                <p className="text-neutral-400 my-4">For individuals and students exploring ideas.</p>
-                                <p className="text-5xl font-extrabold my-4">$0<span className="text-lg font-medium text-neutral-500">/mo</span></p>
-                                <Button onClick={() => onNavigate('dashboard')} variant="outline" className="w-full">Get Started</Button>
-                                <ul className="space-y-4 mt-8 text-neutral-300">
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> 1 Project</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> 50 Image Generations/mo</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Standard Image Quality</li>
+                        <div className="grid lg:grid-cols-3 gap-8 items-stretch">
+                            <div className="bg-white border-2 border-gray-200 p-8 rounded-2xl flex flex-col hover:shadow-xl transition-shadow">
+                                <h3 className="text-2xl font-bold text-gray-900">Starter</h3>
+                                <p className="text-gray-600 my-4">Perfect for exploring and testing ideas</p>
+                                <p className="text-5xl font-extrabold my-6 text-gray-900">$0<span className="text-lg font-medium text-gray-500">/mo</span></p>
+                                <Button onClick={() => onNavigate('dashboard')} variant="outline" className="w-full">Start Free</Button>
+                                <ul className="space-y-4 mt-8 text-gray-700">
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> 1 Active Project</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> 50 Image Generations/mo</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Standard Quality (1280x720)</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Community Support</li>
                                 </ul>
                             </div>
-                             {/* Tier 2: Pro (Featured) */}
-                            <div className="bg-neutral-800 border-2 border-green-500 p-8 rounded-3xl h-full flex flex-col relative overflow-hidden">
-                                <div className="absolute top-0 right-0 bg-green-500 text-black font-semibold text-xs px-4 py-1.5 transform translate-x-1/3 -translate-y-1/2 rotate-45">POPULAR</div>
-                                <h3 className="text-2xl font-bold">Pro</h3>
-                                <p className="text-neutral-400 my-4">For freelancers and small teams taking it to the next level.</p>
-                                <p className="text-5xl font-extrabold my-4">$49<span className="text-lg font-medium text-neutral-500">/mo</span></p>
-                                <Button onClick={() => onNavigate('dashboard')} variant="primary" className="w-full">Choose Pro</Button>
-                                <ul className="space-y-4 mt-8 text-neutral-300">
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Unlimited Projects</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> 1,000 Image Generations/mo</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Production Quality Images</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Character Consistency Tool</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Priority Support</li>
+                             <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-8 rounded-2xl flex flex-col relative overflow-hidden shadow-2xl transform hover:scale-105 transition-transform">
+                                <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold text-xs px-3 py-1.5 rounded-full">POPULAR</div>
+                                <h3 className="text-2xl font-bold text-white">Professional</h3>
+                                <p className="text-blue-100 my-4">For serious creators and teams</p>
+                                <p className="text-5xl font-extrabold my-6 text-white">$49<span className="text-lg font-medium text-blue-100">/mo</span></p>
+                                <Button onClick={() => onNavigate('dashboard')} className="w-full bg-white text-blue-600 hover:bg-gray-100">Start 14-Day Trial</Button>
+                                <ul className="space-y-4 mt-8 text-white">
+                                    <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Unlimited Projects</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> 1,000 Image Generations/mo</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> HD Quality (1920x1080)</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Character Consistency</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Priority Support</li>
                                 </ul>
                             </div>
-                            {/* Tier 3: Enterprise */}
-                            <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl h-full flex flex-col">
-                                <h3 className="text-2xl font-bold">Enterprise</h3>
-                                <p className="text-neutral-400 my-4">For studios and large teams requiring advanced features.</p>
-                                <p className="text-5xl font-extrabold my-4">Custom</p>
-                                <Button onClick={() => alert('Contacting sales!')} variant="outline" className="w-full">Contact Sales</Button>
-                                 <ul className="space-y-4 mt-8 text-neutral-300">
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Everything in Pro, plus:</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Custom Generation Models</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Team Collaboration Tools</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-green-500 h-5 w-5" /> Dedicated Account Manager</li>
+                            <div className="bg-white border-2 border-gray-200 p-8 rounded-2xl flex flex-col hover:shadow-xl transition-shadow">
+                                <h3 className="text-2xl font-bold text-gray-900">Enterprise</h3>
+                                <p className="text-gray-600 my-4">For studios and large organizations</p>
+                                <p className="text-5xl font-extrabold my-6 text-gray-900">Custom</p>
+                                <Button onClick={() => alert('Contact sales!')} variant="outline" className="w-full">Contact Sales</Button>
+                                 <ul className="space-y-4 mt-8 text-gray-700">
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Everything in Pro</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Unlimited Generations</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> 4K Quality</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Custom AI Training</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-blue-600 h-5 w-5 flex-shrink-0" /> Dedicated Support</li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </section>
-                
-                 {/* Testimonials */}
-                <section className="py-20 sm:py-32 px-4">
+
+                <section className="py-24 px-4 bg-gray-50">
                     <div className="max-w-6xl mx-auto">
-                        <div className="text-center max-w-3xl mx-auto">
-                            <h2 className="text-4xl md:text-5xl font-bold mb-16">Loved By Creatives Worldwide</h2>
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">Trusted by Creators Worldwide</h2>
                         </div>
                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl">
-                                <p className="text-neutral-300 mb-6">"Tumdah has revolutionized our pre-production pipeline. What used to take weeks now takes hours. The consistency tool is a game-changer."</p>
+                            <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-gray-700 mb-6 leading-relaxed">"Tumdah transformed our pre-production workflow. What took weeks now takes hours. The quality is incredible."</p>
                                 <div className="flex items-center gap-4">
-                                    <img className="w-12 h-12 rounded-full" src="https://placehold.co/100x100/22c55e/000000?text=JS" alt="Jane Smith"/>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold">JS</div>
                                     <div>
-                                        <p className="font-bold">Jane Smith</p>
-                                        <p className="text-sm text-neutral-500">Director, Indie Films Co.</p>
+                                        <p className="font-bold text-gray-900">Jane Smith</p>
+                                        <p className="text-sm text-gray-600">Director, Indie Films Co.</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl">
-                                <p className="text-neutral-300 mb-6">"As a solo creator, Tumdah is my secret weapon. I can visualize entire sequences with a level of quality I could only dream of before. Absolutely essential."</p>
+                            <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-gray-700 mb-6 leading-relaxed">"As a solo creator, this is my secret weapon. I can visualize entire sequences with quality I never imagined possible."</p>
                                 <div className="flex items-center gap-4">
-                                     <img className="w-12 h-12 rounded-full" src="https://placehold.co/100x100/eab308/000000?text=MA" alt="Marcus Aurelius"/>
+                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">MA</div>
                                      <div>
-                                        <p className="font-bold">Marcus Aurelius</p>
-                                        <p className="text-sm text-neutral-500">YouTuber & Filmmaker</p>
+                                        <p className="font-bold text-gray-900">Marcus Chen</p>
+                                        <p className="text-sm text-gray-600">Content Creator</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-3xl">
-                                <p className="text-neutral-300 mb-6">"The speed of ideation is insane. We can present clients with multiple, fully-realized visual directions in a single meeting. Tumdah paid for itself on day one."</p>
+                            <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                                <p className="text-gray-700 mb-6 leading-relaxed">"The speed is incredible. We present multiple visual directions to clients in a single meeting. Game changer."</p>
                                  <div className="flex items-center gap-4">
-                                     <img className="w-12 h-12 rounded-full" src="https://placehold.co/100x100/3b82f6/000000?text=EC" alt="Emily Carter"/>
+                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white font-bold">EC</div>
                                     <div>
-                                        <p className="font-bold">Emily Carter</p>
-                                        <p className="text-sm text-neutral-500">Creative Director, Ad Agency</p>
+                                        <p className="font-bold text-gray-900">Emily Carter</p>
+                                        <p className="text-sm text-gray-600">Creative Director</p>
                                     </div>
                                 </div>
                             </div>
@@ -450,74 +454,79 @@ const LandingPage = ({ onNavigate }) => {
                     </div>
                 </section>
 
-                {/* FAQ */}
-                <section id="faq" className="py-20 sm:py-32 px-4">
+                <section id="faq" className="py-24 px-4 bg-white">
                     <div className="max-w-3xl mx-auto">
-                         <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center">Frequently Asked Questions</h2>
-                         <AccordionItem title="Can I maintain a consistent character across multiple images?">
-                            Yes! Our Pro and Enterprise plans include our advanced Character Consistency tool. You upload a reference photo, and our AI ensures the character's facial features and identity are preserved across all generated shots.
+                         <h2 className="text-4xl md:text-5xl font-bold mb-12 text-center text-gray-900">Frequently Asked Questions</h2>
+                         <AccordionItem title="How do I get my Google AI Studio API key?">
+                            Visit Google AI Studio at https://aistudio.google.com/app/apikey to generate your free API key. Copy it and paste it into the .env file as VITE_GOOGLE_AI_API_KEY. Restart the development server to apply changes.
                         </AccordionItem>
-                        <AccordionItem title="What happens if I run out of image generations?">
-                            If you're on a monthly plan, you can purchase additional generation credits, or upgrade to a higher tier. Your credits reset at the start of each billing cycle.
+                         <AccordionItem title="Can I maintain consistent characters across images?">
+                            Yes! Our Character Consistency feature (Pro plan) ensures facial features and identity remain consistent across all generated shots by using reference images.
                         </AccordionItem>
-                        <AccordionItem title="Can I use the generated images for commercial projects?">
-                            Absolutely. You own the rights to all images you generate on any of our paid plans. You are free to use them for any commercial purpose.
+                        <AccordionItem title="What happens when I reach my generation limit?">
+                            You can purchase additional credits or upgrade to a higher tier. Limits reset monthly on your billing date.
                         </AccordionItem>
-                         <AccordionItem title="Do you offer a free trial for paid plans?">
-                            We don't offer a traditional free trial, but our Hobbyist plan is completely free and allows you to test out the core features of Tumdah with a generous number of monthly image generations.
+                        <AccordionItem title="Can I use generated images commercially?">
+                            Yes. All images generated on paid plans are yours to use for commercial purposes without restrictions.
+                        </AccordionItem>
+                         <AccordionItem title="Is there a free trial for Pro features?">
+                            Yes! New Pro subscriptions include a 14-day free trial with full access to all features.
                         </AccordionItem>
                     </div>
                 </section>
 
-                {/* Final CTA */}
-                <section ref={ctaRef} className={`py-20 sm:py-32 px-4 ${ctaAnimationClass}`}>
-                    <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-neutral-900 to-black border border-neutral-800 p-12 rounded-3xl">
-                        <h2 className="text-4xl font-bold mb-4">Ready to Create at the Speed of Thought?</h2>
-                        <p className="text-neutral-400 mb-8">Stop imagining and start creating. Build your first storyboard in minutes.</p>
-                        <Button onClick={() => onNavigate('dashboard')} size="lg">Get Started For Free</Button>
+                <section ref={ctaRef} className={`py-24 px-4 ${ctaAnimationClass}`}>
+                    <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-blue-600 to-cyan-500 p-16 rounded-3xl shadow-2xl">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Ready to Transform Your Creative Process?</h2>
+                        <p className="text-blue-100 mb-8 text-lg">Join thousands of creators building the future of visual content</p>
+                        <Button onClick={() => onNavigate('dashboard')} size="lg" className="bg-white text-blue-600 hover:bg-gray-100 shadow-lg">
+                            Start Creating Free <ArrowRight className="ml-2 h-5 w-5" />
+                        </Button>
                     </div>
                 </section>
             </main>
-            <footer className="max-w-7xl mx-auto px-6 py-12">
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-8">
-                     <div className="col-span-2">
-                        <h3 className="text-xl font-bold mb-2">Tumdah</h3>
-                        <p className="text-neutral-400">The future of visuals, generated instantly.</p>
-                     </div>
-                     <div>
-                         <h4 className="font-semibold mb-3">Product</h4>
-                         <ul className="space-y-2 text-neutral-400">
-                             <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
-                             <li><a href="#" className="hover:text-white">Features</a></li>
-                             <li><a href="#" className="hover:text-white">Updates</a></li>
-                         </ul>
-                     </div>
-                     <div>
-                         <h4 className="font-semibold mb-3">Company</h4>
-                         <ul className="space-y-2 text-neutral-400">
-                             <li><a href="#" className="hover:text-white">About</a></li>
-                             <li><a href="#" className="hover:text-white">Careers</a></li>
-                             <li><a href="#" className="hover:text-white">Contact</a></li>
-                         </ul>
-                     </div>
-                     <div>
-                         <h4 className="font-semibold mb-3">Resources</h4>
-                         <ul className="space-y-2 text-neutral-400">
-                             <li><a href="#" className="hover:text-white">Blog</a></li>
-                             <li><a href="#" className="hover:text-white">Tutorials</a></li>
-                             <li><a href="#faq" className="hover:text-white">FAQ</a></li>
-                         </ul>
-                     </div>
-                     <div>
-                         <h4 className="font-semibold mb-3">Legal</h4>
-                         <ul className="space-y-2 text-neutral-400">
-                             <li><a href="#" className="hover:text-white">Privacy</a></li>
-                             <li><a href="#" className="hover:text-white">Terms</a></li>
-                         </ul>
-                     </div>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-between items-center border-t border-neutral-800 pt-8">
-                    <p className="text-neutral-500">&copy; {new Date().getFullYear()} Tumdah, Inc. All rights reserved.</p>
+            <footer className="bg-gray-50 border-t border-gray-200">
+                <div className="max-w-7xl mx-auto px-6 py-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-8">
+                         <div className="col-span-2">
+                            <h3 className="text-xl font-bold mb-2 text-gray-900">Tumdah</h3>
+                            <p className="text-gray-600 text-sm">AI-powered creative suite for visual storytelling</p>
+                         </div>
+                         <div>
+                             <h4 className="font-semibold mb-3 text-gray-900">Product</h4>
+                             <ul className="space-y-2 text-sm text-gray-600">
+                                 <li><a href="#pricing" className="hover:text-blue-600">Pricing</a></li>
+                                 <li><a href="#features" className="hover:text-blue-600">Features</a></li>
+                                 <li><a href="#" className="hover:text-blue-600">Updates</a></li>
+                             </ul>
+                         </div>
+                         <div>
+                             <h4 className="font-semibold mb-3 text-gray-900">Company</h4>
+                             <ul className="space-y-2 text-sm text-gray-600">
+                                 <li><a href="#" className="hover:text-blue-600">About</a></li>
+                                 <li><a href="#" className="hover:text-blue-600">Careers</a></li>
+                                 <li><a href="#" className="hover:text-blue-600">Contact</a></li>
+                             </ul>
+                         </div>
+                         <div>
+                             <h4 className="font-semibold mb-3 text-gray-900">Resources</h4>
+                             <ul className="space-y-2 text-sm text-gray-600">
+                                 <li><a href="#" className="hover:text-blue-600">Blog</a></li>
+                                 <li><a href="#" className="hover:text-blue-600">Docs</a></li>
+                                 <li><a href="#faq" className="hover:text-blue-600">FAQ</a></li>
+                             </ul>
+                         </div>
+                         <div>
+                             <h4 className="font-semibold mb-3 text-gray-900">Legal</h4>
+                             <ul className="space-y-2 text-sm text-gray-600">
+                                 <li><a href="#" className="hover:text-blue-600">Privacy</a></li>
+                                 <li><a href="#" className="hover:text-blue-600">Terms</a></li>
+                             </ul>
+                         </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row justify-between items-center border-t border-gray-200 pt-8">
+                        <p className="text-gray-500 text-sm">&copy; {new Date().getFullYear()} Tumdah, Inc. All rights reserved.</p>
+                    </div>
                 </div>
             </footer>
         </div>
@@ -528,19 +537,19 @@ const CreativeSuite = ({ onNavigate }) => {
     const [activeTool, setActiveTool] = useState('images');
 
     return (
-        <Page className="p-0 sm:p-0">
-             <div className="flex h-screen bg-black">
-                <nav className="w-20 bg-neutral-900/50 border-r border-neutral-800 p-4 flex flex-col items-center justify-between">
+        <Page className="p-0 sm:p-0 bg-gray-50">
+             <div className="flex h-screen bg-gray-50">
+                <nav className="w-20 bg-white border-r border-gray-200 p-4 flex flex-col items-center justify-between shadow-sm">
                     <div>
-                         <h1 className="text-2xl font-bold cursor-pointer tracking-tighter mb-12" onClick={() => onNavigate('/')}>T</h1>
+                         <h1 className="text-2xl font-bold cursor-pointer tracking-tight mb-12 text-blue-600" onClick={() => onNavigate('/')}>T</h1>
                         <div className="space-y-4">
-                            <button title="Storyboard Builder" onClick={() => setActiveTool('storyboard')} className={`p-3 rounded-lg ${activeTool === 'storyboard' ? 'bg-green-500 text-black' : 'text-neutral-500 hover:bg-neutral-800 hover:text-white'}`}><Film/></button>
-                            <button title="Image Studio" onClick={() => setActiveTool('images')} className={`p-3 rounded-lg ${activeTool === 'images' ? 'bg-green-500 text-black' : 'text-neutral-500 hover:bg-neutral-800 hover:text-white'}`}><ImageIcon/></button>
+                            <button title="Storyboard Builder" onClick={() => setActiveTool('storyboard')} className={`p-3 rounded-xl transition-all ${activeTool === 'storyboard' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}><Film/></button>
+                            <button title="Image Studio" onClick={() => setActiveTool('images')} className={`p-3 rounded-xl transition-all ${activeTool === 'images' ? 'bg-blue-600 text-white shadow-lg' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}><ImageIcon/></button>
                         </div>
                     </div>
-                    <button title="Settings" className="p-3 rounded-lg text-neutral-500 hover:bg-neutral-800 hover:text-white"><Settings/></button>
+                    <button title="Settings" className="p-3 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all"><Settings/></button>
                 </nav>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto bg-white">
                     {activeTool === 'storyboard' && <StoryboardPage onNavigate={onNavigate}/>}
                     {activeTool === 'images' && <GenerateImagesPage onNavigate={onNavigate}/>}
                 </div>
@@ -550,21 +559,16 @@ const CreativeSuite = ({ onNavigate }) => {
 };
 
 const GenerateImagesPage = ({ onNavigate }) => {
-    const [mode, setMode] = useState('human'); // 'human' or 'product'
-
-    // --- Human Mode State ---
+    const [mode, setMode] = useState('human');
     const [refImage, setRefImage] = useState(null);
     const [userFace, setUserFace] = useState(null);
     const [generatedImages, setGeneratedImages] = useState([]);
     const [humanLoading, setHumanLoading] = useState(false);
     const [fullscreenImage, setFullscreenImage] = useState(null);
-
-    // --- Product Mode State ---
     const [productStyleRef, setProductStyleRef] = useState(null);
     const [productPhoto, setProductPhoto] = useState(null);
     const [generatedProductImages, setGeneratedProductImages] = useState([]);
     const [productLoading, setProductLoading] = useState(false);
-
 
     const generateAndSetImages = async () => {
         if (!refImage || !userFace) {
@@ -590,7 +594,7 @@ Ensure the subject's face and identity are perfectly preserved from the source i
 - **Artistic Style:** The overall artistic style is determined by these details: lighting is ${refLighting}, color palette is ${refColorTone}, composition is ${refComposition}, camera shot is a ${refShot}, and the background is ${refBackground}.
 - **Pose:** The subject should hold this pose: ${refPose}.
 Ensure the subject's face and identity are perfectly preserved from the source image.`;
-            
+
             const prompt4 = `Using the person from the provided image as the subject, create a new photorealistic image.
 - **New Outfit:** The person should now be wearing: ${refOutfit}.
 - **Artistic Style:** The style is defined by: lighting is ${refLighting}, color palette is ${refColorTone}, composition is ${refComposition}, camera shot is a ${refShot}, and the background is ${refBackground}.
@@ -642,30 +646,26 @@ Ensure the subject's face and identity are perfectly preserved from the source i
         setProductLoading(false);
     };
 
-
-    const handleGenerate = () => generateAndSetImages();
-    const handleRegenerate = () => generateAndSetImages();
-    
     const handleDownloadImage = (imageUrl, index) => {
         const link = document.createElement('a');
         link.href = imageUrl;
-        link.download = `generated-image-${index + 1}.jpeg`;
+        link.download = `tumdah-image-${index + 1}.jpeg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     return (
-        <div className="p-8 h-full flex flex-col">
+        <div className="p-8 h-full flex flex-col bg-gray-50">
             <header className="mb-8">
-                <h2 className="text-3xl font-bold">Image Studio</h2>
-                <p className="text-neutral-400">Generate production-quality visuals for characters or products.</p>
-                <div className="mt-6 flex justify-center p-1 bg-neutral-900 rounded-lg space-x-1 max-w-md mx-auto">
-                    <button onClick={() => setMode('human')} className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors w-1/2 flex items-center justify-center gap-2 ${mode === 'human' ? 'bg-green-500 text-black' : 'text-neutral-400 hover:bg-neutral-800'}`}>
-                        <User size={16} /> Human Photography
+                <h2 className="text-3xl font-bold text-gray-900">Image Studio</h2>
+                <p className="text-gray-600 mt-2">Generate studio-quality visuals for characters or products with AI</p>
+                <div className="mt-6 flex justify-center p-1.5 bg-gray-200 rounded-xl space-x-2 max-w-md mx-auto">
+                    <button onClick={() => setMode('human')} className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'human' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+                        <User size={18} /> Character
                     </button>
-                    <button onClick={() => setMode('product')} className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors w-1/2 flex items-center justify-center gap-2 ${mode === 'product' ? 'bg-green-500 text-black' : 'text-neutral-400 hover:bg-neutral-800'}`}>
-                        <Package size={16} /> Product Photography
+                    <button onClick={() => setMode('product')} className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'product' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
+                        <Package size={18} /> Product
                     </button>
                 </div>
             </header>
@@ -673,36 +673,36 @@ Ensure the subject's face and identity are perfectly preserved from the source i
             {mode === 'human' && (
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <aside className="lg:col-span-1 flex flex-col gap-6">
-                        <Uploader label="1. Upload Style Reference" onUpload={setRefImage} imageUrl={refImage} />
-                        <Uploader label="2. Upload Character Photo" onUpload={setUserFace} imageUrl={userFace} />
-                        <Button onClick={handleGenerate} className="w-full mt-auto" disabled={humanLoading} size="lg">
-                            {humanLoading ? <LoadingSpinner/> : <> <Sparkles className="h-5 w-5 -ml-2"/> Generate Images </>}
+                        <Uploader label="1. Style Reference" onUpload={setRefImage} imageUrl={refImage} />
+                        <Uploader label="2. Character Photo" onUpload={setUserFace} imageUrl={userFace} />
+                        <Button onClick={generateAndSetImages} className="w-full mt-auto" disabled={humanLoading} size="lg">
+                            {humanLoading ? <LoadingSpinner/> : <> <Sparkles className="h-5 w-5"/> Generate </>}
                         </Button>
                     </aside>
                     <main className="lg:col-span-3">
                          <div className="grid grid-cols-2 gap-6 h-full">
-                            {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-neutral-900 rounded-2xl flex items-center justify-center"><LoadingSpinner/></div>)}
-                            
+                            {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200"><LoadingSpinner/></div>)}
+
                             {!humanLoading && generatedImages.length > 0 && generatedImages.map((src, index) => (
                                 <div key={index} className="relative group cursor-pointer" onClick={() => setFullscreenImage(src)}>
-                                    <img src={src} alt={`Generated ${index + 1}`} className="w-full h-full object-cover rounded-2xl aspect-video" />
-                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
-                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setFullscreenImage(src); }}><ZoomIn className="h-5 w-5"/></Button>
-                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownloadImage(src, index); }}><Download className="h-5 w-5"/></Button>
+                                    <img src={src} alt={`Generated ${index + 1}`} className="w-full h-full object-cover rounded-xl aspect-video border border-gray-200" />
+                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setFullscreenImage(src); }} className="bg-white text-gray-900 hover:bg-gray-100"><ZoomIn className="h-5 w-5"/></Button>
+                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownloadImage(src, index); }} className="bg-white text-gray-900 hover:bg-gray-100"><Download className="h-5 w-5"/></Button>
                                     </div>
                                 </div>
                             ))}
 
                             {!humanLoading && generatedImages.length === 0 && (
-                                <div className="col-span-2 aspect-video bg-neutral-900 rounded-2xl flex flex-col items-center justify-center text-neutral-700">
+                                <div className="col-span-2 aspect-video bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
                                     <ImageIcon className="h-24 w-24 mb-4"/>
-                                    <p className="text-xl">Your generated images will appear here</p>
+                                    <p className="text-xl font-medium">Generated images appear here</p>
                                 </div>
                             )}
                         </div>
                          {generatedImages.length > 0 && !humanLoading && (
                             <div className="flex justify-center mt-6">
-                                <Button onClick={handleRegenerate} disabled={humanLoading} variant="secondary">Regenerate All</Button>
+                                <Button onClick={generateAndSetImages} disabled={humanLoading} variant="secondary">Regenerate All</Button>
                             </div>
                         )}
                     </main>
@@ -712,30 +712,30 @@ Ensure the subject's face and identity are perfectly preserved from the source i
             {mode === 'product' && (
                  <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
                     <aside className="lg:col-span-1 flex flex-col gap-6">
-                        <Uploader label="1. Upload Style Reference" onUpload={setProductStyleRef} imageUrl={productStyleRef} />
-                        <Uploader label="2. Upload Product Photo" onUpload={setProductPhoto} imageUrl={productPhoto} />
+                        <Uploader label="1. Style Reference" onUpload={setProductStyleRef} imageUrl={productStyleRef} />
+                        <Uploader label="2. Product Photo" onUpload={setProductPhoto} imageUrl={productPhoto} />
                         <Button onClick={generateAndSetProductImages} className="w-full mt-auto" disabled={productLoading} size="lg">
-                            {productLoading ? <LoadingSpinner/> : <> <Sparkles className="h-5 w-5 -ml-2"/> Generate Shots </>}
+                            {productLoading ? <LoadingSpinner/> : <> <Sparkles className="h-5 w-5"/> Generate </>}
                         </Button>
                     </aside>
                     <main className="lg:col-span-3">
                          <div className="grid grid-cols-2 gap-6 h-full">
-                            {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-neutral-900 rounded-2xl flex items-center justify-center"><LoadingSpinner/></div>)}
-                            
+                            {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200"><LoadingSpinner/></div>)}
+
                             {!productLoading && generatedProductImages.length > 0 && generatedProductImages.map((src, index) => (
                                 <div key={index} className="relative group cursor-pointer" onClick={() => setFullscreenImage(src)}>
-                                    <img src={src} alt={`Generated Product Shot ${index + 1}`} className="w-full h-full object-cover rounded-2xl aspect-video" />
-                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
-                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setFullscreenImage(src); }}><ZoomIn className="h-5 w-5"/></Button>
-                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownloadImage(src, index); }}><Download className="h-5 w-5"/></Button>
+                                    <img src={src} alt={`Product ${index + 1}`} className="w-full h-full object-cover rounded-xl aspect-video border border-gray-200" />
+                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setFullscreenImage(src); }} className="bg-white text-gray-900 hover:bg-gray-100"><ZoomIn className="h-5 w-5"/></Button>
+                                        <Button variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownloadImage(src, index); }} className="bg-white text-gray-900 hover:bg-gray-100"><Download className="h-5 w-5"/></Button>
                                     </div>
                                 </div>
                             ))}
 
                             {!productLoading && generatedProductImages.length === 0 && (
-                                <div className="col-span-2 aspect-video bg-neutral-900 rounded-2xl flex flex-col items-center justify-center text-neutral-700">
+                                <div className="col-span-2 aspect-video bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
                                     <Package className="h-24 w-24 mb-4"/>
-                                    <p className="text-xl">Your generated product shots will appear here</p>
+                                    <p className="text-xl font-medium">Product shots appear here</p>
                                 </div>
                             )}
                         </div>
@@ -748,11 +748,10 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                 </div>
             )}
 
-            {fullscreenImage && createPortal(<div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setFullscreenImage(null)}><img src={fullscreenImage} alt="Fullscreen" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" /></div>, document.body)}
+            {fullscreenImage && createPortal(<div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setFullscreenImage(null)}><button className="absolute top-4 right-4 text-white hover:text-gray-300" onClick={() => setFullscreenImage(null)}><X size={32}/></button><img src={fullscreenImage} alt="Fullscreen" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" /></div>, document.body)}
         </div>
     );
 };
-
 
 const ShotCardV2 = ({ scene, shot, shotId, generationState, onRegenerate, onShotUpdate }) => {
     const { isLoading, url } = generationState || { isLoading: false, url: null };
@@ -762,33 +761,33 @@ const ShotCardV2 = ({ scene, shot, shotId, generationState, onRegenerate, onShot
     const cameraMovements = ["Static", "Pan", "Tilt", "Dolly In", "Dolly Out", "Crane Shot", "Handheld", "Steadicam"];
 
     return (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-lg overflow-hidden flex flex-col">
-            <div className="w-full aspect-video bg-neutral-800 flex items-center justify-center relative group">
-                {isLoading ? <LoadingSpinner /> : (url ? <img src={url} alt={shot.shot_type} className="w-full h-full object-cover" /> : <div className="text-neutral-700"><Camera size={48}/></div>)}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+            <div className="w-full aspect-video bg-gray-100 flex items-center justify-center relative group">
+                {isLoading ? <LoadingSpinner /> : (url ? <img src={url} alt={shot.shot_type} className="w-full h-full object-cover" /> : <div className="text-gray-300"><Camera size={48}/></div>)}
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="secondary" onClick={() => onRegenerate(shotId, scene, shot)} disabled={isLoading} className="text-xs py-2 px-3">
+                    <Button variant="secondary" onClick={() => onRegenerate(shotId, scene, shot)} disabled={isLoading} className="text-xs py-2 px-4 bg-white text-gray-900">
                         {isLoading ? <LoadingSpinner className="h-4 w-4"/> : "Regenerate"}
                     </Button>
                 </div>
             </div>
             <div className="p-4 flex-1 flex flex-col">
-                <p className="text-neutral-400 text-sm mb-4 flex-grow">{shot.caption}</p>
-                <div className="space-y-3 text-sm border-t border-neutral-800 pt-3 mt-3">
+                <p className="text-gray-600 text-sm mb-4 flex-grow leading-relaxed">{shot.caption}</p>
+                <div className="space-y-3 text-sm border-t border-gray-200 pt-3 mt-3">
                     <div className="grid grid-cols-3 items-center gap-2">
-                        <label className="text-neutral-500 font-medium col-span-1">Shot</label>
-                        <select value={shot.shot_type} onChange={(e) => onShotUpdate(shotId, { ...shot, shot_type: e.target.value })} className="bg-neutral-800 rounded px-2 py-1 col-span-2 outline-none focus:ring-1 focus:ring-green-500">
+                        <label className="text-gray-500 font-medium col-span-1 text-xs">Shot</label>
+                        <select value={shot.shot_type} onChange={(e) => onShotUpdate(shotId, { ...shot, shot_type: e.target.value })} className="bg-gray-50 border border-gray-300 rounded px-2 py-1.5 col-span-2 outline-none focus:ring-2 focus:ring-blue-500 text-xs">
                             {shotTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                     <div className="grid grid-cols-3 items-center gap-2">
-                         <label className="text-neutral-500 font-medium col-span-1">Lens</label>
-                        <select value={shot.lens_choice} onChange={(e) => onShotUpdate(shotId, { ...shot, lens_choice: e.target.value })} className="bg-neutral-800 rounded px-2 py-1 col-span-2 outline-none focus:ring-1 focus:ring-green-500">
+                         <label className="text-gray-500 font-medium col-span-1 text-xs">Lens</label>
+                        <select value={shot.lens_choice} onChange={(e) => onShotUpdate(shotId, { ...shot, lens_choice: e.target.value })} className="bg-gray-50 border border-gray-300 rounded px-2 py-1.5 col-span-2 outline-none focus:ring-2 focus:ring-blue-500 text-xs">
                             {lensChoices.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                     </div>
                     <div className="grid grid-cols-3 items-center gap-2">
-                        <label className="text-neutral-500 font-medium col-span-1">Move</label>
-                        <select value={shot.camera_movement} onChange={(e) => onShotUpdate(shotId, { ...shot, camera_movement: e.target.value })} className="bg-neutral-800 rounded px-2 py-1 col-span-2 outline-none focus:ring-1 focus:ring-green-500">
+                        <label className="text-gray-500 font-medium col-span-1 text-xs">Move</label>
+                        <select value={shot.camera_movement} onChange={(e) => onShotUpdate(shotId, { ...shot, camera_movement: e.target.value })} className="bg-gray-50 border border-gray-300 rounded px-2 py-1.5 col-span-2 outline-none focus:ring-2 focus:ring-blue-500 text-xs">
                             {cameraMovements.map(m => <option key={m} value={m}>{m}</option>)}
                         </select>
                     </div>
@@ -801,12 +800,10 @@ const ShotCardV2 = ({ scene, shot, shotId, generationState, onRegenerate, onShot
 const StoryboardPage = ({ onNavigate }) => {
     const [story, setStory] = useState("");
     const [storyboardData, setStoryboardData] = useState(null);
-    const [workflowStage, setWorkflowStage] = useState('script'); // 'script', 'blueprint', 'board'
+    const [workflowStage, setWorkflowStage] = useState('script');
     const [loading, setLoading] = useState(false);
     const [isGeneratingShots, setIsGeneratingShots] = useState(false);
     const [shotGenerationState, setShotGenerationState] = useState({});
-    
-    // Blueprint State
     const [visualStyle, setVisualStyle] = useState("Cinematic, photorealistic, high-budget film aesthetic.");
     const [characterProfiles, setCharacterProfiles] = useState({});
 
@@ -827,11 +824,11 @@ const StoryboardPage = ({ onNavigate }) => {
         }
         setLoading(false);
     };
-    
+
     const handleCharacterUpdate = (name, newDescription) => {
         setCharacterProfiles(prev => ({...prev, [name]: {...prev[name], detailed_description: newDescription }}));
     };
-    
+
     const handleFinalizeBlueprint = () => {
         setWorkflowStage('board');
         generateAllShots();
@@ -849,7 +846,7 @@ const StoryboardPage = ({ onNavigate }) => {
 - **LIGHTING & COLOR:** Lighting Style: ${scene.lighting_setup}. Color Palette: ${scene.color_palette}.
 The final image must be of impeccable, film-production quality.`;
     };
-    
+
     const generateAllShots = async () => {
         if (!storyboardData) return;
         setIsGeneratingShots(true);
@@ -863,11 +860,11 @@ The final image must be of impeccable, film-production quality.`;
                 });
             });
         });
-        
+
         const initialState = allShots.reduce((acc, { shotId }) => ({...acc, [shotId]: { isLoading: true, url: null }}), {});
         setShotGenerationState(initialState);
 
-        const shotPromises = allShots.map(({ shotId, scene, shot }) => 
+        const shotPromises = allShots.map(({ shotId, scene, shot }) =>
             callApi('/generate_image', { prompt: createCinematicPrompt(scene, shot) })
                 .then(url => setShotGenerationState(prev => ({ ...prev, [shotId]: { isLoading: false, url } })))
                 .catch(err => {
@@ -875,7 +872,7 @@ The final image must be of impeccable, film-production quality.`;
                     setShotGenerationState(prev => ({ ...prev, [shotId]: { isLoading: false, url: null } }));
                 })
         );
-        
+
         await Promise.all(shotPromises);
         setIsGeneratingShots(false);
     };
@@ -892,12 +889,11 @@ The final image must be of impeccable, film-production quality.`;
     };
 
     const handleShotUpdate = (shotId, updatedShot) => {
-        // Find the original shot in storyboardData and update it
-        const newData = JSON.parse(JSON.stringify(storyboardData)); // Deep copy
+        const newData = JSON.parse(JSON.stringify(storyboardData));
         let found = false;
         for (const scene of newData.scenes) {
             for (const beat of scene.beats) {
-                const shotIndex = beat.shot_recommendations.findIndex(shot => shot.caption === updatedShot.caption); // Simple check
+                const shotIndex = beat.shot_recommendations.findIndex(shot => shot.caption === updatedShot.caption);
                 if (shotIndex !== -1) {
                     beat.shot_recommendations[shotIndex] = updatedShot;
                     found = true;
@@ -918,51 +914,50 @@ The final image must be of impeccable, film-production quality.`;
         setLoading(false);
     };
 
-    // Render Logic
     if (workflowStage === 'script') {
         return (
-            <div className="p-8 h-full flex flex-col max-w-3xl mx-auto my-auto text-center">
+            <div className="p-8 h-full flex flex-col max-w-3xl mx-auto my-auto text-center bg-gray-50">
                 <header className="mb-12">
-                    <h2 className="text-3xl font-bold">Storyboard Builder: Step 1</h2>
-                    <p className="text-neutral-400">From script to screen. Paste your story to begin creating your cinematic blueprint.</p>
+                    <h2 className="text-3xl font-bold text-gray-900">Storyboard Builder</h2>
+                    <p className="text-gray-600 mt-2">Transform your script into a cinematic blueprint</p>
                 </header>
-                <textarea className="w-full h-80 bg-neutral-900 border border-neutral-800 text-white rounded-2xl p-4 focus:ring-2 focus:ring-green-500 outline-none" value={story} onChange={(e) => setStory(e.target.value)} placeholder="A lone astronaut..."></textarea>
+                <textarea className="w-full h-80 bg-white border-2 border-gray-300 text-gray-900 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" value={story} onChange={(e) => setStory(e.target.value)} placeholder="Paste your story here or generate one with AI..."></textarea>
                 <div className="flex justify-center mt-6 space-x-4">
                     <Button onClick={handleParseStory} disabled={loading || story.trim() === ""}>Analyze Script</Button>
-                    <Button onClick={handleGenerateStory} disabled={loading} variant="secondary">Generate a Story</Button>
+                    <Button onClick={handleGenerateStory} disabled={loading} variant="secondary">Generate Story</Button>
                 </div>
             </div>
         );
     }
-    
+
     if (workflowStage === 'blueprint') {
         return (
-            <div className="p-8 h-full flex flex-col max-w-4xl mx-auto">
+            <div className="p-8 h-full flex flex-col max-w-4xl mx-auto bg-gray-50">
                 <header className="mb-8 text-center">
-                    <h2 className="text-3xl font-bold">Storyboard Builder: Step 2</h2>
-                    <p className="text-neutral-400">Define the Cinematic DNA. Refine your visual style and characters before generating the board.</p>
+                    <h2 className="text-3xl font-bold text-gray-900">Define Visual Style</h2>
+                    <p className="text-gray-600 mt-2">Set the creative direction for your storyboard</p>
                 </header>
                 <div className="space-y-8">
-                    <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl">
-                        <h3 className="text-xl font-semibold mb-3">Visual Style</h3>
-                        <p className="text-sm text-neutral-500 mb-3">Describe the overall look and feel. Mention genre, mood, color, film stock, etc.</p>
-                        <input type="text" value={visualStyle} onChange={e => setVisualStyle(e.target.value)} className="w-full bg-neutral-800 border border-neutral-700 rounded-lg p-3 outline-none focus:ring-2 focus:ring-green-500" />
+                    <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <h3 className="text-xl font-semibold mb-3 text-gray-900">Visual Style</h3>
+                        <p className="text-sm text-gray-600 mb-3">Describe the overall aesthetic, mood, genre, and color palette</p>
+                        <input type="text" value={visualStyle} onChange={e => setVisualStyle(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                     </div>
-                    <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl">
-                        <h3 className="text-xl font-semibold mb-3">Character Profiles</h3>
+                    <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <h3 className="text-xl font-semibold mb-3 text-gray-900">Character Profiles</h3>
                         <div className="space-y-4">
                             {Object.values(characterProfiles).map(char => (
                                 <div key={char.name}>
-                                    <label className="font-bold">{char.name}</label>
-                                    <textarea value={char.detailed_description} onChange={e => handleCharacterUpdate(char.name, e.target.value)} rows="3" className="w-full mt-1 bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-green-500" />
+                                    <label className="font-bold text-gray-900">{char.name}</label>
+                                    <textarea value={char.detailed_description} onChange={e => handleCharacterUpdate(char.name, e.target.value)} rows="3" className="w-full mt-2 bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
                 <div className="mt-8 flex justify-center gap-4">
-                     <Button onClick={() => setWorkflowStage('script')} variant="secondary"><ArrowLeft className="h-5 w-5 mr-2" /> Back to Script</Button>
-                     <Button onClick={handleFinalizeBlueprint} size="lg">Build Storyboard <ArrowRight className="h-5 w-5 ml-2" /></Button>
+                     <Button onClick={() => setWorkflowStage('script')} variant="secondary"><ArrowLeft className="h-5 w-5 mr-2" /> Back</Button>
+                     <Button onClick={handleFinalizeBlueprint} size="lg">Generate Storyboard <ArrowRight className="h-5 w-5 ml-2" /></Button>
                 </div>
             </div>
         )
@@ -970,14 +965,14 @@ The final image must be of impeccable, film-production quality.`;
 
     if (workflowStage === 'board') {
         return (
-            <div className="p-8 h-full">
+            <div className="p-8 h-full bg-gray-50">
                 <main className="overflow-y-auto">
                      {storyboardData.scenes && storyboardData.scenes.map((scene, sceneIndex) => (
                         <div key={sceneIndex} className="mb-16">
-                            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 mb-8 sticky top-0 z-10 backdrop-blur-sm">
-                              <h2 className="text-2xl font-bold mb-2">Scene {sceneIndex + 1}: {scene.scene_title}</h2>
-                              <p className="text-neutral-400 mb-2"><strong>Location:</strong> {scene.location}</p>
-                              <div className="text-sm text-neutral-500 border-t border-neutral-800 pt-3 mt-3 space-y-1">
+                            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
+                              <h2 className="text-2xl font-bold mb-2 text-gray-900">Scene {sceneIndex + 1}: {scene.scene_title}</h2>
+                              <p className="text-gray-600 mb-2"><strong>Location:</strong> {scene.location}</p>
+                              <div className="text-sm text-gray-600 border-t border-gray-200 pt-3 mt-3 space-y-1">
                                   <p><strong>Mood:</strong> {scene.mood}</p>
                                   <p><strong>Lighting:</strong> {scene.lighting_setup}</p>
                                   <p><strong>Palette:</strong> {scene.color_palette}</p>
@@ -985,7 +980,7 @@ The final image must be of impeccable, film-production quality.`;
                             </div>
                             {scene.beats && scene.beats.map((beat, beatIndex) => (
                               <div key={beatIndex} className="mb-8">
-                                <h3 className="text-xl font-semibold mb-4 text-green-400 pl-4">{beat.beat_title}</h3>
+                                <h3 className="text-xl font-semibold mb-4 text-blue-600 pl-4">{beat.beat_title}</h3>
                                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {beat.shot_recommendations.map((shot, shotIndex) => {
                                         const shotId = `${scene.scene_title}-${shotIndex}-${beatIndex}-${Math.random()}`;
@@ -1019,7 +1014,7 @@ const App = () => {
 
     return (
         <AppContext.Provider value={{ navigate }}>
-            <div className="bg-black font-sans antialiased text-white">
+            <div className="bg-white font-sans antialiased text-gray-900">
                 {renderPage()}
             </div>
         </AppContext.Provider>
@@ -1027,4 +1022,3 @@ const App = () => {
 };
 
 export default App;
-
