@@ -18,8 +18,8 @@ const useScrollAnimation = (threshold = 0.1) => {
 const FeatureCard = ({ icon, title, children }) => {
     const [ref, animationClass] = useScrollAnimation();
     return (
-        <div ref={ref} className={`bg-gray-800/50 border border-gray-700 p-8 rounded-2xl hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1 ${animationClass}`}>
-            <div className="text-emerald-400 mb-4">{icon}</div>
+        <div ref={ref} className={`bg-gray-800/50 border border-gray-700 p-8 rounded-2xl hover:shadow-xl hover:shadow-[#3CB371]/10 transition-all duration-300 hover:-translate-y-1 ${animationClass}`}>
+            <div className="text-[#3CB371] mb-4">{icon}</div>
             <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
             <p className="text-gray-300 leading-relaxed">{children}</p>
         </div>
@@ -30,7 +30,7 @@ const AccordionItem = ({ title, children }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="border-b border-gray-700">
-            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left py-5 hover:text-emerald-400 transition-colors text-white">
+            <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center text-left py-5 hover:text-[#3CB371] transition-colors text-white">
                 <span className="text-lg font-semibold">{title}</span>
                 <ChevronDown className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} text-gray-400`} />
             </button>
@@ -50,9 +50,9 @@ export const LandingPage = ({ onNavigate }) => {
             <Header onGoHome={() => onNavigate('/')} onNavigate={onNavigate} />
             <main>
                 <section className="text-center px-4 pt-20 pb-24 max-w-6xl mx-auto relative">
-                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 via-transparent to-transparent pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#3CB371]/10 via-transparent to-transparent pointer-events-none"></div>
                     <div className="relative">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full mb-8 text-sm font-medium text-emerald-400">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3CB371]/10 border border-[#3CB371]/20 rounded-full mb-8 text-sm font-medium text-[#3CB371]">
                             <Sparkles className="h-4 w-4" />
                             <span>Powered by Google AI Studio</span>
                         </div>
@@ -61,7 +61,7 @@ export const LandingPage = ({ onNavigate }) => {
                                 Create Studio-Quality
                             </span>
                             <br />
-                            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                            <span className="bg-gradient-to-r from-[#3CB371] to-[#2a9d5f] bg-clip-text text-transparent">
                                 Visuals in Minutes
                             </span>
                         </h1>
@@ -69,7 +69,7 @@ export const LandingPage = ({ onNavigate }) => {
                             Tumdah is the AI-powered creative suite for professionals. Build dynamic storyboards and generate production-quality visuals with unprecedented speed and consistency.
                         </p>
                         <div className="flex justify-center gap-4 flex-wrap">
-                            <Button onClick={() => onNavigate('dashboard')} size="lg" className="shadow-lg shadow-emerald-500/25">
+                            <Button onClick={() => onNavigate('dashboard')} size="lg" className="shadow-lg shadow-[#3CB371]/25">
                                 <span>Start Creating Free</span>
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
@@ -131,17 +131,17 @@ export const LandingPage = ({ onNavigate }) => {
                         </div>
                         <div className="grid md:grid-cols-3 gap-12">
                             <div className="relative flex flex-col items-center text-center">
-                                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-emerald-500/25">1</div>
+                                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-[#3CB371]/25">1</div>
                                 <h3 className="text-xl font-bold mb-3 text-white">Input Your Vision</h3>
                                 <p className="text-gray-300">Write your script or use AI to generate one. Tumdah analyzes the narrative structure automatically.</p>
                             </div>
                             <div className="relative flex flex-col items-center text-center">
-                                 <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-emerald-500/25">2</div>
+                                 <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-[#3CB371]/25">2</div>
                                 <h3 className="text-xl font-bold mb-3 text-white">Define Your Style</h3>
                                 <p className="text-gray-300">Set visual parameters, character details, and cinematographic preferences with precision.</p>
                             </div>
                             <div className="relative flex flex-col items-center text-center">
-                                 <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-emerald-500/25">3</div>
+                                 <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] text-white font-bold text-2xl rounded-2xl mb-6 shadow-lg shadow-[#3CB371]/25">3</div>
                                 <h3 className="text-xl font-bold mb-3 text-white">Generate & Export</h3>
                                 <p className="text-gray-300">Create your entire storyboard instantly. Refine, regenerate, and export high-res images.</p>
                             </div>
@@ -156,24 +156,24 @@ export const LandingPage = ({ onNavigate }) => {
                             <p className="text-gray-300 text-lg">Start free, scale as you grow. No surprises.</p>
                         </div>
                         <div className="grid lg:grid-cols-3 gap-8 items-stretch">
-                            <div className="bg-gray-800/50 border-2 border-gray-700 p-8 rounded-2xl flex flex-col hover:shadow-xl hover:shadow-emerald-500/10 transition-all hover:border-emerald-500/50">
+                            <div className="bg-gray-800/50 border-2 border-gray-700 p-8 rounded-2xl flex flex-col hover:shadow-xl hover:shadow-[#3CB371]/10 transition-all hover:border-[#3CB371]/50">
                                 <h3 className="text-2xl font-bold text-white">Starter</h3>
                                 <p className="text-gray-400 my-4">Perfect for exploring and testing ideas</p>
                                 <p className="text-5xl font-extrabold my-6 text-white">$0<span className="text-lg font-medium text-gray-400">/mo</span></p>
                                 <Button onClick={() => onNavigate('dashboard')} variant="outline" className="w-full">Start Free</Button>
                                 <ul className="space-y-4 mt-8 text-gray-300">
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> 1 Active Project</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> 50 Image Generations/mo</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Standard Quality (1280x720)</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Community Support</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> 1 Active Project</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> 50 Image Generations/mo</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Standard Quality (1280x720)</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Community Support</li>
                                 </ul>
                             </div>
-                             <div className="bg-gradient-to-br from-emerald-500 to-teal-500 p-8 rounded-2xl flex flex-col relative overflow-hidden shadow-2xl shadow-emerald-500/25 transform hover:scale-105 transition-transform">
+                             <div className="bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] p-8 rounded-2xl flex flex-col relative overflow-hidden shadow-2xl shadow-[#3CB371]/25 transform hover:scale-105 transition-transform">
                                 <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold text-xs px-3 py-1.5 rounded-full">POPULAR</div>
                                 <h3 className="text-2xl font-bold text-white">Professional</h3>
-                                <p className="text-emerald-50 my-4">For serious creators and teams</p>
-                                <p className="text-5xl font-extrabold my-6 text-white">$49<span className="text-lg font-medium text-emerald-50">/mo</span></p>
-                                <Button onClick={() => onNavigate('dashboard')} className="w-full bg-white text-emerald-600 hover:bg-gray-100">Start 14-Day Trial</Button>
+                                <p className="text-green-50 my-4">For serious creators and teams</p>
+                                <p className="text-5xl font-extrabold my-6 text-white">$49<span className="text-lg font-medium text-green-50">/mo</span></p>
+                                <Button onClick={() => onNavigate('dashboard')} className="w-full bg-white text-[#2a9d5f] hover:bg-gray-100">Start 14-Day Trial</Button>
                                 <ul className="space-y-4 mt-8 text-white">
                                     <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Unlimited Projects</li>
                                     <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> 1,000 Image Generations/mo</li>
@@ -182,17 +182,17 @@ export const LandingPage = ({ onNavigate }) => {
                                     <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 flex-shrink-0" /> Priority Support</li>
                                 </ul>
                             </div>
-                            <div className="bg-gray-800/50 border-2 border-gray-700 p-8 rounded-2xl flex flex-col hover:shadow-xl hover:shadow-emerald-500/10 transition-all hover:border-emerald-500/50">
+                            <div className="bg-gray-800/50 border-2 border-gray-700 p-8 rounded-2xl flex flex-col hover:shadow-xl hover:shadow-[#3CB371]/10 transition-all hover:border-[#3CB371]/50">
                                 <h3 className="text-2xl font-bold text-white">Enterprise</h3>
                                 <p className="text-gray-400 my-4">For studios and large organizations</p>
                                 <p className="text-5xl font-extrabold my-6 text-white">Custom</p>
                                 <Button onClick={() => alert('Contact sales!')} variant="outline" className="w-full">Contact Sales</Button>
                                  <ul className="space-y-4 mt-8 text-gray-300">
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Everything in Pro</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Unlimited Generations</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> 4K Quality</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Custom AI Training</li>
-                                    <li className="flex items-center gap-3"><CheckCircle className="text-emerald-400 h-5 w-5 flex-shrink-0" /> Dedicated Support</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Everything in Pro</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Unlimited Generations</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> 4K Quality</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Custom AI Training</li>
+                                    <li className="flex items-center gap-3"><CheckCircle className="text-[#3CB371] h-5 w-5 flex-shrink-0" /> Dedicated Support</li>
                                 </ul>
                             </div>
                         </div>
@@ -205,17 +205,17 @@ export const LandingPage = ({ onNavigate }) => {
                             <h2 className="text-4xl md:text-5xl font-bold text-white">Trusted by Creators Worldwide</h2>
                         </div>
                          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-emerald-500/10 transition-all">
+                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#3CB371]/10 transition-all">
                                 <p className="text-gray-300 mb-6 leading-relaxed">"Tumdah transformed our pre-production workflow. What took weeks now takes hours. The quality is incredible."</p>
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center text-white font-bold">JS</div>
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] flex items-center justify-center text-white font-bold">JS</div>
                                     <div>
                                         <p className="font-bold text-white">Jane Smith</p>
                                         <p className="text-sm text-gray-400">Director, Indie Films Co.</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-emerald-500/10 transition-all">
+                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#3CB371]/10 transition-all">
                                 <p className="text-gray-300 mb-6 leading-relaxed">"As a solo creator, this is my secret weapon. I can visualize entire sequences with quality I never imagined possible."</p>
                                 <div className="flex items-center gap-4">
                                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold">MA</div>
@@ -225,7 +225,7 @@ export const LandingPage = ({ onNavigate }) => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-emerald-500/10 transition-all">
+                            <div className="bg-gray-800/50 border border-gray-700 p-8 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-[#3CB371]/10 transition-all">
                                 <p className="text-gray-300 mb-6 leading-relaxed">"The speed is incredible. We present multiple visual directions to clients in a single meeting. Game changer."</p>
                                  <div className="flex items-center gap-4">
                                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-red-400 flex items-center justify-center text-white font-bold">EC</div>
@@ -261,10 +261,10 @@ export const LandingPage = ({ onNavigate }) => {
                 </section>
 
                 <section ref={ctaRef} className={`py-24 px-4 bg-gray-900 ${ctaAnimationClass}`}>
-                    <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-emerald-500 to-teal-500 p-16 rounded-3xl shadow-2xl shadow-emerald-500/25">
+                    <div className="max-w-4xl mx-auto text-center bg-gradient-to-br from-[#3CB371] to-[#2a9d5f] p-16 rounded-3xl shadow-2xl shadow-[#3CB371]/25">
                         <h2 className="text-4xl md:text-5xl font-bold mb-4 text-white">Ready to Transform Your Creative Process?</h2>
-                        <p className="text-emerald-50 mb-8 text-lg">Join thousands of creators building the future of visual content</p>
-                        <Button onClick={() => onNavigate('dashboard')} size="lg" className="bg-white text-emerald-600 hover:bg-gray-100 shadow-lg">
+                        <p className="text-green-50 mb-8 text-lg">Join thousands of creators building the future of visual content</p>
+                        <Button onClick={() => onNavigate('dashboard')} size="lg" className="bg-white text-[#2a9d5f] hover:bg-gray-100 shadow-lg">
                             Start Creating Free <ArrowRight className="ml-2 h-5 w-5" />
                         </Button>
                     </div>
@@ -283,32 +283,32 @@ export const LandingPage = ({ onNavigate }) => {
                          <div>
                              <h4 className="font-semibold mb-3 text-white">Product</h4>
                              <ul className="space-y-2 text-sm text-gray-400">
-                                 <li><a href="#pricing" className="hover:text-emerald-400">Pricing</a></li>
-                                 <li><a href="#features" className="hover:text-emerald-400">Features</a></li>
-                                 <li><a href="#" className="hover:text-emerald-400">Updates</a></li>
+                                 <li><a href="#pricing" className="hover:text-[#3CB371]">Pricing</a></li>
+                                 <li><a href="#features" className="hover:text-[#3CB371]">Features</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Updates</a></li>
                              </ul>
                          </div>
                          <div>
                              <h4 className="font-semibold mb-3 text-white">Company</h4>
                              <ul className="space-y-2 text-sm text-gray-400">
-                                 <li><a href="#" className="hover:text-emerald-400">About</a></li>
-                                 <li><a href="#" className="hover:text-emerald-400">Careers</a></li>
-                                 <li><a href="#" className="hover:text-emerald-400">Contact</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">About</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Careers</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Contact</a></li>
                              </ul>
                          </div>
                          <div>
                              <h4 className="font-semibold mb-3 text-white">Resources</h4>
                              <ul className="space-y-2 text-sm text-gray-400">
-                                 <li><a href="#" className="hover:text-emerald-400">Blog</a></li>
-                                 <li><a href="#" className="hover:text-emerald-400">Docs</a></li>
-                                 <li><a href="#faq" className="hover:text-emerald-400">FAQ</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Blog</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Docs</a></li>
+                                 <li><a href="#faq" className="hover:text-[#3CB371]">FAQ</a></li>
                              </ul>
                          </div>
                          <div>
                              <h4 className="font-semibold mb-3 text-white">Legal</h4>
                              <ul className="space-y-2 text-sm text-gray-400">
-                                 <li><a href="#" className="hover:text-emerald-400">Privacy</a></li>
-                                 <li><a href="#" className="hover:text-emerald-400">Terms</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Privacy</a></li>
+                                 <li><a href="#" className="hover:text-[#3CB371]">Terms</a></li>
                              </ul>
                          </div>
                     </div>
