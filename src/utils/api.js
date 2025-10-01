@@ -74,87 +74,60 @@ export const callApi = async (endpoint, data) => {
 
     if (endpoint === '/generate_image') {
         const placeholderImage = "https://placehold.co/1280x720/1a1a1a/ffffff?text=Image+Generation+Failed";
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${API_KEY}`;
+
+        const parts = [{ text: data.prompt }];
 
         if (data.image) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${API_KEY}`;
-            const parts = [{ text: data.prompt }];
             parts.push({
                 inlineData: {
                     mimeType: "image/jpeg",
                     data: data.image.split(',')[1]
                 }
             });
+        }
 
-            if (data.styleImage) {
-                 parts.push({
-                    inlineData: {
-                        mimeType: "image/jpeg",
-                        data: data.styleImage.split(',')[1]
-                    }
-                });
+        if (data.styleImage) {
+            parts.push({
+                inlineData: {
+                    mimeType: "image/jpeg",
+                    data: data.styleImage.split(',')[1]
+                }
+            });
+        }
+
+        const payload = {
+            contents: [{ parts }],
+            generationConfig: {
+                responseModalities: ['IMAGE']
+            }
+        };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("API error response:", errorData);
+                throw new Error(`API call failed with status: ${response.status}`);
             }
 
-            const payload = {
-                contents: [{ parts: parts }],
-                generationConfig: {
-                    responseModalities: ['IMAGE']
-                },
-            };
+            const result = await response.json();
+            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
 
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("API error response:", errorData);
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
-                const result = await response.json();
-                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-                if (!base64Data) throw new Error("No image data found in response.");
-                return `data:image/png;base64,${base64Data}`;
-            } catch (error) {
-                console.error("Fetch error with multimodal model:", error);
-                return placeholderImage;
+            if (!base64Data) {
+                console.error("Unexpected response structure:", result);
+                throw new Error("No image data found in response.");
             }
-        } else {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:generateContent?key=${API_KEY}`;
-            const payload = {
-                contents: [{
-                    parts: [{
-                        text: data.prompt
-                    }]
-                }],
-                generationConfig: {
-                    responseModalities: ['IMAGE']
-                }
-            };
 
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("API error response:", errorData);
-                    throw new Error(`API call failed with status: ${response.status}`);
-                }
-                const result = await response.json();
-                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-                if (!base64Data) {
-                    console.error("Unexpected Imagen response structure:", result);
-                    throw new Error("No image data found in imagen response.");
-                }
-                return `data:image/png;base64,${base64Data}`;
-            } catch (error) {
-                console.error("Fetch error with Imagen:", error);
-                return placeholderImage;
-            }
+            return `data:image/png;base64,${base64Data}`;
+        } catch (error) {
+            console.error("Fetch error with Imagen 3 (nanobanana):", error);
+            return placeholderImage;
         }
     }
 
