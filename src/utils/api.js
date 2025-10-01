@@ -76,7 +76,7 @@ export const callApi = async (endpoint, data) => {
         const placeholderImage = "https://placehold.co/1280x720/1a1a1a/ffffff?text=Image+Generation+Failed";
 
         if (data.image) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${API_KEY}`;
             const parts = [{ text: data.prompt }];
             parts.push({
                 inlineData: {
@@ -107,7 +107,11 @@ export const callApi = async (endpoint, data) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("API error response:", errorData);
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
                 const result = await response.json();
                 const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
                 if (!base64Data) throw new Error("No image data found in response.");
@@ -117,12 +121,15 @@ export const callApi = async (endpoint, data) => {
                 return placeholderImage;
             }
         } else {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${API_KEY}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:generateContent?key=${API_KEY}`;
             const payload = {
-                instances: [{ prompt: data.prompt }],
-                parameters: {
-                    "sampleCount": 1,
-                    "negativePrompt": "logo, watermark, text, branding, signature, poor quality"
+                contents: [{
+                    parts: [{
+                        text: data.prompt
+                    }]
+                }],
+                generationConfig: {
+                    responseModalities: ['IMAGE']
                 }
             };
 
@@ -132,14 +139,18 @@ export const callApi = async (endpoint, data) => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("API error response:", errorData);
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
                 const result = await response.json();
-                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-                    return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                } else {
+                const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                if (!base64Data) {
                     console.error("Unexpected Imagen response structure:", result);
                     throw new Error("No image data found in imagen response.");
                 }
+                return `data:image/png;base64,${base64Data}`;
             } catch (error) {
                 console.error("Fetch error with Imagen:", error);
                 return placeholderImage;
