@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, createContext, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Download, Image as ImageIcon, Film, Sparkles, ArrowRight, Bot, PenTool, Wind, Settings, ArrowLeft, ZoomIn, Camera, User, Package, CheckCircle, ChevronDown, Zap, Layers, Globe } from 'lucide-react';
+import { X, Download, Image as ImageIcon, Film, Sparkles, ArrowRight, Bot, PenTool, Wind, Settings, ArrowLeft, ZoomIn, Camera, User, Package, CircleCheck as CheckCircle, ChevronDown, Zap, Layers, Globe } from 'lucide-react';
 
 const AppContext = createContext();
 
