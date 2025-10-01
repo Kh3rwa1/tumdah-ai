@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, ArrowRight, CheckCircle, ChevronDown, Zap, Layers, Globe, Bot, PenTool, Film } from 'lucide-react';
+import { Sparkles, ArrowRight, CircleCheck as CheckCircle, ChevronDown, Zap, Layers, Globe, Bot, PenTool, Film } from 'lucide-react';
 import { Header } from '../components/Header';
 import { Button } from '../components/Button';
 
