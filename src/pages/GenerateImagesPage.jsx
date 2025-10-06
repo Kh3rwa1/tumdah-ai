@@ -104,16 +104,16 @@ Ensure the subject's face and identity are perfectly preserved from the source i
     };
 
     return (
-        <div className="p-8 h-full flex flex-col bg-gray-50">
-            <header className="mb-8">
-                <h2 className="text-3xl font-bold text-gray-900">Image Studio</h2>
-                <p className="text-gray-600 mt-2">Generate studio-quality visuals for characters or products with AI</p>
-                <div className="mt-6 flex justify-center p-1.5 bg-gray-200 rounded-xl space-x-2 max-w-md mx-auto">
-                    <button onClick={() => setMode('human')} className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'human' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
-                        <User size={18} /> Character
+        <div className="p-10 h-full flex flex-col bg-gradient-to-br from-white to-neutral-50">
+            <header className="mb-10">
+                <h2 className="text-4xl font-bold text-neutral-900 mb-3">Image Studio</h2>
+                <p className="text-neutral-600 text-lg">Generate studio-quality visuals for characters or products with AI</p>
+                <div className="mt-8 flex justify-center p-2 bg-white rounded-2xl space-x-3 max-w-md mx-auto shadow-sm border border-neutral-200">
+                    <button onClick={() => setMode('human')} className={`px-8 py-4 text-sm font-bold rounded-xl transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'human' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}>
+                        <User size={20} /> Character
                     </button>
-                    <button onClick={() => setMode('product')} className={`px-6 py-3 text-sm font-semibold rounded-lg transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'product' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}>
-                        <Package size={18} /> Product
+                    <button onClick={() => setMode('product')} className={`px-8 py-4 text-sm font-bold rounded-xl transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'product' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}>
+                        <Package size={20} /> Product
                     </button>
                 </div>
             </header>
@@ -129,12 +129,12 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                     </aside>
                     <main className="lg:col-span-3">
                          <div className="grid grid-cols-2 gap-6 h-full">
-                            {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200"><LoadingSpinner/></div>)}
+                            {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!humanLoading && generatedImages.length > 0 && generatedImages.map((src, index) => (
                                 <div key={index} className="relative group cursor-pointer" onClick={() => setFullscreenImage(src)}>
-                                    <img src={src} alt={`Generated ${index + 1}`} className="w-full h-full object-cover rounded-xl aspect-video border border-gray-200" />
-                                    <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
+                                    <img src={src} alt={`Generated ${index + 1}`} className="w-full h-full object-cover rounded-2xl aspect-video border border-neutral-200 shadow-sm" />
+                                    <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
                                         <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setFullscreenImage(src); }} className="bg-white text-gray-900 hover:bg-gray-100"><ZoomIn className="h-5 w-5"/></Button>
                                         <Button variant="secondary" onClick={(e) => { e.stopPropagation(); handleDownloadImage(src, index); }} className="bg-white text-gray-900 hover:bg-gray-100"><Download className="h-5 w-5"/></Button>
                                     </div>
@@ -142,9 +142,9 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!humanLoading && generatedImages.length === 0 && (
-                                <div className="col-span-2 aspect-video bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
-                                    <ImageIcon className="h-24 w-24 mb-4"/>
-                                    <p className="text-xl font-medium">Generated images appear here</p>
+                                <div className="col-span-2 aspect-video bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-2xl flex flex-col items-center justify-center text-neutral-400 border-2 border-dashed border-neutral-300">
+                                    <ImageIcon className="h-28 w-28 mb-6"/>
+                                    <p className="text-2xl font-bold">Generated images appear here</p>
                                 </div>
                             )}
                         </div>
@@ -168,7 +168,7 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                     </aside>
                     <main className="lg:col-span-3">
                          <div className="grid grid-cols-2 gap-6 h-full">
-                            {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200"><LoadingSpinner/></div>)}
+                            {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!productLoading && generatedProductImages.length > 0 && generatedProductImages.map((src, index) => (
                                 <div key={index} className="relative group cursor-pointer" onClick={() => setFullscreenImage(src)}>
@@ -181,9 +181,9 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!productLoading && generatedProductImages.length === 0 && (
-                                <div className="col-span-2 aspect-video bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">
-                                    <Package className="h-24 w-24 mb-4"/>
-                                    <p className="text-xl font-medium">Product shots appear here</p>
+                                <div className="col-span-2 aspect-video bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-2xl flex flex-col items-center justify-center text-neutral-400 border-2 border-dashed border-neutral-300">
+                                    <Package className="h-28 w-28 mb-6"/>
+                                    <p className="text-2xl font-bold">Product shots appear here</p>
                                 </div>
                             )}
                         </div>

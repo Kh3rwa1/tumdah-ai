@@ -21,7 +21,7 @@ const App = () => {
 
     return (
         <AppContext.Provider value={{ navigate }}>
-            <div className="bg-white font-sans antialiased text-gray-900">
+            <div className="bg-white font-sans antialiased text-neutral-900">
                 {renderPage()}
             </div>
         </AppContext.Provider>
