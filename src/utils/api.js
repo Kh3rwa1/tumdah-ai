@@ -87,14 +87,14 @@ export const callApi = async (endpoint, data) => {
             throw new Error('API key not configured. Please add VITE_GOOGLE_AI_API_KEY to your .env file.');
         }
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${API_KEY}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${API_KEY}`;
 
-        const parts = [{ text: data.prompt }];
+        const parts = [];
 
         if (data.image) {
             parts.push({
-                inlineData: {
-                    mimeType: "image/jpeg",
+                inline_data: {
+                    mime_type: "image/jpeg",
                     data: data.image.split(',')[1]
                 }
             });
@@ -102,17 +102,21 @@ export const callApi = async (endpoint, data) => {
 
         if (data.styleImage) {
             parts.push({
-                inlineData: {
-                    mimeType: "image/jpeg",
+                inline_data: {
+                    mime_type: "image/jpeg",
                     data: data.styleImage.split(',')[1]
                 }
             });
         }
 
+        parts.push({ text: data.prompt });
+
         const payload = {
             contents: [{ parts }],
             generationConfig: {
-                responseModalities: ['IMAGE']
+                imageConfig: {
+                    aspectRatio: "16:9"
+                }
             }
         };
 
@@ -131,7 +135,7 @@ export const callApi = async (endpoint, data) => {
             }
 
             const result = await response.json();
-            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
 
             if (!base64Data) {
                 console.error("Unexpected response structure:", result);
