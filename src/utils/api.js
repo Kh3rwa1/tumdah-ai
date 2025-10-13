@@ -6,6 +6,11 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/analyze_ref') {
+        if (!API_KEY || API_KEY === 'your-api-key-here') {
+            console.error('Google AI API key is not configured');
+            throw new Error('API key not configured. Please add VITE_GOOGLE_AI_API_KEY to your .env file.');
+        }
+
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
         const systemPrompt = "You are a professional photographer's assistant. Analyze the provided image in extreme detail. DO NOT describe the person's face, identity, or ethnicity. Focus ONLY on the visual elements. Provide the analysis as a valid JSON object with the following keys: 'outfit_description', 'fabric_texture', 'color_palette', 'lighting_style', 'camera_shot', 'composition', 'pose', and 'background'.";
 
@@ -19,14 +24,18 @@ export const callApi = async (endpoint, data) => {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("API error response:", errorData);
-                throw new Error(`API call failed with status: ${response.status}`);
+                const errorMessage = errorData?.error?.message || `API call failed with status: ${response.status}`;
+                throw new Error(errorMessage);
             }
             const result = await response.json();
             const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) {
+                throw new Error('No response from API');
+            }
             return JSON.parse(text);
         } catch (error) {
-            console.error("Fetch or JSON parse error:", error);
-            return null;
+            console.error("Analyze ref error:", error);
+            throw error;
         }
     }
 
@@ -73,7 +82,11 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/generate_image') {
-        const placeholderImage = "https://placehold.co/1280x720/1a1a1a/ffffff?text=Image+Generation+Failed";
+        if (!API_KEY || API_KEY === 'your-api-key-here') {
+            console.error('Google AI API key is not configured');
+            throw new Error('API key not configured. Please add VITE_GOOGLE_AI_API_KEY to your .env file.');
+        }
+
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:generateContent?key=${API_KEY}`;
 
         const parts = [{ text: data.prompt }];
@@ -113,7 +126,8 @@ export const callApi = async (endpoint, data) => {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error("API error response:", errorData);
-                throw new Error(`API call failed with status: ${response.status}`);
+                const errorMessage = errorData?.error?.message || `API call failed with status: ${response.status}`;
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -126,8 +140,8 @@ export const callApi = async (endpoint, data) => {
 
             return `data:image/png;base64,${base64Data}`;
         } catch (error) {
-            console.error("Fetch error with Imagen 3 (nanobanana):", error);
-            return placeholderImage;
+            console.error("Image generation error:", error);
+            throw error;
         }
     }
 

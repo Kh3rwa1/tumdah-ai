@@ -26,9 +26,14 @@ export const GenerateImagesPage = ({ onNavigate }) => {
         setHumanLoading(true);
         setGeneratedImages([]);
 
-        const analysisResultRef = await callApi('/analyze_ref', { image: refImage });
+        try {
+            const analysisResultRef = await callApi('/analyze_ref', { image: refImage });
 
-        if (analysisResultRef) {
+            if (!analysisResultRef) {
+                alert("Failed to analyze the style reference image. Please try a different image.");
+                setHumanLoading(false);
+                return;
+            }
             const { outfit_description: refOutfit, color_palette: refColorTone, lighting_style: refLighting, camera_shot: refShot, composition: refComposition, pose: refPose, background: refBackground } = analysisResultRef;
 
             const prompt1_2 = `Using the person from the provided image as the subject, create a new photorealistic image.
@@ -56,12 +61,21 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                 callApi('/generate_image', { prompt: prompt4, image: userFace })
             ];
 
-            const images = await Promise.all(imagePromises);
-            setGeneratedImages(images);
-        } else {
-            alert("Failed to analyze the style reference image. Please try a different image.");
+            const images = await Promise.all(imagePromises.map(p => p.catch(err => {
+                console.error('Image generation failed:', err);
+                return null;
+            })));
+            setGeneratedImages(images.filter(img => img !== null));
+
+            if (images.every(img => img === null)) {
+                alert("All image generations failed. Please check your API key and try again.");
+            }
+        } catch (error) {
+            console.error('Error in generateAndSetImages:', error);
+            alert(error.message || "An error occurred. Please check your API key and try again.");
+        } finally {
+            setHumanLoading(false);
         }
-        setHumanLoading(false);
     };
 
     const generateAndSetProductImages = async () => {
@@ -71,6 +85,8 @@ Ensure the subject's face and identity are perfectly preserved from the source i
         }
         setProductLoading(true);
         setGeneratedProductImages([]);
+
+        try {
 
         const basePrompt = `Task: Re-shoot the product from the first uploaded image (Product Photo) and place it seamlessly into the scene from the second uploaded image (Style Reference Photo).
 - **Source Product:** The primary subject is the product in the first image. Preserve its geometry, color, texture, and identity perfectly. Do not alter the product.
@@ -87,11 +103,23 @@ Ensure the subject's face and identity are perfectly preserved from the source i
 - **Style:** The lighting, color palette, and overall mood must match the second image.`
         ];
 
-        const imagePromises = prompts.map(prompt => callApi('/generate_image', { prompt, image: productPhoto, styleImage: productStyleRef }));
+            const imagePromises = prompts.map(prompt => callApi('/generate_image', { prompt, image: productPhoto, styleImage: productStyleRef }));
 
-        const images = await Promise.all(imagePromises);
-        setGeneratedProductImages(images);
-        setProductLoading(false);
+            const images = await Promise.all(imagePromises.map(p => p.catch(err => {
+                console.error('Product image generation failed:', err);
+                return null;
+            })));
+            setGeneratedProductImages(images.filter(img => img !== null));
+
+            if (images.every(img => img === null)) {
+                alert("All product image generations failed. Please check your API key and try again.");
+            }
+        } catch (error) {
+            console.error('Error in generateAndSetProductImages:', error);
+            alert(error.message || "An error occurred. Please check your API key and try again.");
+        } finally {
+            setProductLoading(false);
+        }
     };
 
     const handleDownloadImage = (imageUrl, index) => {
