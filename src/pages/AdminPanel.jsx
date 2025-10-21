@@ -545,11 +545,10 @@ const AdminPanel = ({ onNavigate }) => {
                                                 >
                                                     Google AI Studio
                                                 </a>
-                                                . The app will automatically try multiple image generation models.
                                             </span>
                                         </p>
-                                        <p className="text-xs text-neutral-400 pl-6">
-                                            Testing tries: Imagen 3.0, Gemini 2.0 Flash Imagen, then Gemini 2.0 Flash (text fallback). Image models have regional availability.
+                                        <p className="text-xs text-amber-600 pl-6 font-medium">
+                                            Note: Google's image generation models (Imagen) have very limited availability. Most API keys currently show placeholder images. The app uses Gemini for text analysis and will generate real images when models become available in your region.
                                         </p>
                                     </div>
                                 </div>
