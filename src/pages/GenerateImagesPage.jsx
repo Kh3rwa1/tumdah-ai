@@ -171,38 +171,43 @@ Ensure the subject's face and identity are perfectly preserved from the source i
     };
 
     return (
-        <div className="p-4 sm:p-6 md:p-10 h-full flex flex-col bg-gradient-to-br from-white to-neutral-50">
-            <header className="mb-6 sm:mb-8 md:mb-10">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-neutral-900 mb-2 sm:mb-3">Image Studio</h2>
-                <p className="text-neutral-600 text-sm sm:text-base md:text-lg">Generate studio-quality visuals for characters or products with AI</p>
+        <div className="h-screen flex flex-col bg-gradient-to-br from-white to-neutral-50 overflow-hidden">
+            <header className="flex-shrink-0 px-4 sm:px-6 md:px-10 py-4 sm:py-5 border-b border-neutral-200 bg-white/80 backdrop-blur-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                    <div>
+                        <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900">Image Studio</h2>
+                        <p className="text-neutral-600 text-xs sm:text-sm mt-1">Generate studio-quality visuals with AI</p>
+                    </div>
+                    <div className="flex p-1.5 bg-neutral-50 rounded-xl gap-2 shadow-sm border border-neutral-200 w-full sm:w-auto">
+                        <button onClick={() => setMode('human')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-lg transition-all flex-1 sm:flex-none flex items-center justify-center gap-1.5 ${mode === 'human' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'}`}>
+                            <User size={16} className="sm:w-5 sm:h-5" /> Character
+                        </button>
+                        <button onClick={() => setMode('product')} className={`px-4 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold rounded-lg transition-all flex-1 sm:flex-none flex items-center justify-center gap-1.5 ${mode === 'product' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-white'}`}>
+                            <Package size={16} className="sm:w-5 sm:h-5" /> Product
+                        </button>
+                    </div>
+                </div>
                 {usingPlaceholders && (
-                    <div className="mt-3 sm:mt-4 max-w-2xl mx-auto bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4 text-center">
-                        <p className="text-xs sm:text-sm text-blue-800">
-                            <strong>Demo Mode:</strong> Configure your Google AI API key in the Admin panel to generate custom images. Showing sample images for now.
+                    <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-2.5 sm:p-3">
+                        <p className="text-xs text-blue-800 text-center">
+                            <strong>Demo Mode:</strong> Configure API key in Admin panel to generate custom images.
                         </p>
                     </div>
                 )}
-                <div className="mt-6 sm:mt-8 flex justify-center p-1.5 sm:p-2 bg-white rounded-xl sm:rounded-2xl gap-2 sm:gap-3 max-w-md mx-auto shadow-sm border border-neutral-200">
-                    <button onClick={() => setMode('human')} className={`px-4 py-3 sm:px-6 sm:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all w-1/2 flex items-center justify-center gap-1.5 sm:gap-2 ${mode === 'human' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}>
-                        <User size={16} className="sm:w-5 sm:h-5" /> Character
-                    </button>
-                    <button onClick={() => setMode('product')} className={`px-4 py-3 sm:px-6 sm:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all w-1/2 flex items-center justify-center gap-1.5 sm:gap-2 ${mode === 'product' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}>
-                        <Package size={16} className="sm:w-5 sm:h-5" /> Product
-                    </button>
-                </div>
             </header>
 
             {mode === 'human' && (
-                <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                    <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4 md:gap-6">
-                        <Uploader label="1. Style Reference" onUpload={setRefImage} imageUrl={refImage} />
-                        <Uploader label="2. Character Photo" onUpload={setUserFace} imageUrl={userFace} />
-                        <Button onClick={generateAndSetImages} className="w-full" disabled={humanLoading} size="lg">
-                            {humanLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
-                        </Button>
-                    </aside>
-                    <main className="lg:col-span-3 flex-1">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 h-full">
+                <div className="flex-1 overflow-hidden p-4 sm:p-6 md:p-8">
+                    <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4">
+                            <Uploader label="1. Style Reference" onUpload={setRefImage} imageUrl={refImage} />
+                            <Uploader label="2. Character Photo" onUpload={setUserFace} imageUrl={userFace} />
+                            <Button onClick={generateAndSetImages} className="w-full" disabled={humanLoading}>
+                                {humanLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
+                            </Button>
+                        </aside>
+                        <main className="lg:col-span-3 flex flex-col min-h-0">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 h-full overflow-y-auto">
                             {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!humanLoading && generatedImages.length > 0 && generatedImages.map((src, index) => (
@@ -220,32 +225,36 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!humanLoading && generatedImages.length === 0 && (
-                                <div className="sm:col-span-2 aspect-video bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center text-neutral-400 border-2 border-dashed border-neutral-300">
-                                    <ImageIcon className="h-16 w-16 sm:h-20 sm:w-20 md:h-28 md:w-28 mb-3 sm:mb-4 md:mb-6"/>
-                                    <p className="text-base sm:text-xl md:text-2xl font-bold px-4 text-center">Generated images appear here</p>
+                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 min-h-[200px]">
+                                    <div className="text-center">
+                                        <ImageIcon className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-2 sm:mb-3"/>
+                                        <p className="text-sm sm:text-base font-bold px-4">Generated images appear here</p>
+                                    </div>
                                 </div>
                             )}
-                        </div>
-                         {generatedImages.length > 0 && !humanLoading && (
-                            <div className="flex justify-center mt-4 sm:mt-6">
-                                <Button onClick={generateAndSetImages} disabled={humanLoading} variant="secondary" className="text-sm sm:text-base">Regenerate All</Button>
                             </div>
-                        )}
-                    </main>
+                            {generatedImages.length > 0 && !humanLoading && (
+                                <div className="flex justify-center mt-3 sm:mt-4 flex-shrink-0">
+                                    <Button onClick={generateAndSetImages} disabled={humanLoading} variant="secondary" size="sm">Regenerate All</Button>
+                                </div>
+                            )}
+                        </main>
+                    </div>
                 </div>
             )}
 
             {mode === 'product' && (
-                 <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                    <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4 md:gap-6">
-                        <Uploader label="1. Style Reference" onUpload={setProductStyleRef} imageUrl={productStyleRef} />
-                        <Uploader label="2. Product Photo" onUpload={setProductPhoto} imageUrl={productPhoto} />
-                        <Button onClick={generateAndSetProductImages} className="w-full" disabled={productLoading} size="lg">
-                            {productLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
-                        </Button>
-                    </aside>
-                    <main className="lg:col-span-3 flex-1">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6 h-full">
+                <div className="flex-1 overflow-hidden p-4 sm:p-6 md:p-8">
+                    <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4">
+                            <Uploader label="1. Style Reference" onUpload={setProductStyleRef} imageUrl={productStyleRef} />
+                            <Uploader label="2. Product Photo" onUpload={setProductPhoto} imageUrl={productPhoto} />
+                            <Button onClick={generateAndSetProductImages} className="w-full" disabled={productLoading}>
+                                {productLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
+                            </Button>
+                        </aside>
+                        <main className="lg:col-span-3 flex flex-col min-h-0">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 h-full overflow-y-auto">
                             {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!productLoading && generatedProductImages.length > 0 && generatedProductImages.map((src, index) => (
@@ -263,18 +272,21 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!productLoading && generatedProductImages.length === 0 && (
-                                <div className="sm:col-span-2 aspect-video bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center text-neutral-400 border-2 border-dashed border-neutral-300">
-                                    <Package className="h-16 w-16 sm:h-20 sm:w-20 md:h-28 md:w-28 mb-3 sm:mb-4 md:mb-6"/>
-                                    <p className="text-base sm:text-xl md:text-2xl font-bold px-4 text-center">Product shots appear here</p>
+                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 min-h-[200px]">
+                                    <div className="text-center">
+                                        <Package className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-2 sm:mb-3"/>
+                                        <p className="text-sm sm:text-base font-bold px-4">Product shots appear here</p>
+                                    </div>
                                 </div>
                             )}
-                        </div>
-                         {generatedProductImages.length > 0 && !productLoading && (
-                            <div className="flex justify-center mt-4 sm:mt-6">
-                                <Button onClick={generateAndSetProductImages} disabled={productLoading} variant="secondary" className="text-sm sm:text-base">Regenerate All</Button>
                             </div>
-                        )}
-                    </main>
+                            {generatedProductImages.length > 0 && !productLoading && (
+                                <div className="flex justify-center mt-3 sm:mt-4 flex-shrink-0">
+                                    <Button onClick={generateAndSetProductImages} disabled={productLoading} variant="secondary" size="sm">Regenerate All</Button>
+                                </div>
+                            )}
+                        </main>
+                    </div>
                 </div>
             )}
 
