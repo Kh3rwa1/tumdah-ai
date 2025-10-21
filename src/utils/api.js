@@ -73,6 +73,11 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/parse_story') {
+        if (!API_KEY || API_KEY === 'your-api-key-here') {
+            console.error('Google AI API key is not configured for story parsing');
+            throw new Error('API key not configured');
+        }
+
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
         const systemPrompt = `You are a Master AI Cinematographer. Your task is to transform a written story into a detailed, professional cinematic blueprint in a structured JSON format. Analyze the narrative and emotional arcs to make expert cinematographic decisions. For each narrative beat, provide a sequence of specific shot recommendations. Each recommendation MUST include: 'shot_type', 'caption', 'lens_choice', 'aperture', and 'camera_movement'. The final output MUST be a single, valid JSON object with no markdown. The JSON structure should follow this schema: { "story_title": "...", "logline": "...", "cast_refs": { "[CHARACTER_NAME]": { "name": "...", "description": "..." } }, "scenes": [ { "scene_title": "...", "location": "...", "description": "...", "mood": "...", "lighting_setup": "...", "color_palette": "...", "beats": [ { "beat_title": "...", "description": "...", "shot_recommendations": [ { "shot_type": "...", "caption": "...", "lens_choice": "...", "aperture": "...", "camera_movement": "..." } ] } ] } ] }`;
 
@@ -82,20 +87,38 @@ export const callApi = async (endpoint, data) => {
         };
 
         try {
+            console.log('Parsing story with Gemini...');
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Story parsing failed:', errorData?.error?.message || response.status);
+                throw new Error(`API call failed: ${response.status}`);
+            }
+
             const result = await response.json();
             let text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) return null;
+
+            if (!text) {
+                console.error('No text in response:', result);
+                return null;
+            }
+
             text = text.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
+            console.log('Story parsed successfully');
             return JSON.parse(text);
         } catch (error) {
-            console.error("Fetch or JSON parse error:", error);
+            console.error("Story parsing error:", error);
             return null;
         }
     }
 
     if (endpoint === '/generate_story') {
+        if (!API_KEY || API_KEY === 'your-api-key-here') {
+            console.error('Google AI API key is not configured for story generation');
+            return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
+        }
+
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
         const systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
 
@@ -104,12 +127,27 @@ export const callApi = async (endpoint, data) => {
         };
 
         try {
+            console.log('Generating story with Gemini...');
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed: ${response.status}`);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Story generation failed:', errorData?.error?.message || response.status, errorData);
+                throw new Error(`API call failed: ${response.status}`);
+            }
+
             const result = await response.json();
-            return result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const storyText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (storyText) {
+                console.log('Story generated successfully, length:', storyText.length);
+                return storyText;
+            }
+
+            console.error('No text in story response:', result);
+            return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
         } catch (error) {
-            console.error("Fetch error:", error);
+            console.error("Story generation error:", error);
             return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
         }
     }
