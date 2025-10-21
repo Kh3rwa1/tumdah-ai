@@ -171,7 +171,8 @@ const AdminPanel = ({ onNavigate }) => {
             }
 
             if (settings.openrouterApiKey) {
-                localStorage.setItem('VITE_OPENROUTER_API_KEY', settings.openrouterApiKey);
+                const trimmedKey = settings.openrouterApiKey.trim();
+                localStorage.setItem('VITE_OPENROUTER_API_KEY', trimmedKey);
 
                 const { data: existingOpenRouter } = await supabase
                     .from('app_settings')
@@ -182,14 +183,14 @@ const AdminPanel = ({ onNavigate }) => {
                 if (existingOpenRouter) {
                     await supabase
                         .from('app_settings')
-                        .update({ value: { api_key: settings.openrouterApiKey } })
+                        .update({ value: { api_key: trimmedKey } })
                         .eq('id', existingOpenRouter.id);
                 } else {
                     await supabase
                         .from('app_settings')
                         .insert([{
                             key: 'openrouter_api_key',
-                            value: { api_key: settings.openrouterApiKey },
+                            value: { api_key: trimmedKey },
                             description: 'OpenRouter API key for AI story generation',
                             category: 'api',
                             is_sensitive: true
@@ -299,11 +300,13 @@ const AdminPanel = ({ onNavigate }) => {
         setOpenRouterTestResult(null);
 
         try {
-            console.log('Testing OpenRouter API key...');
+            const apiKey = settings.openrouterApiKey.trim();
+            console.log('Testing OpenRouter API key...', `Key length: ${apiKey.length}, starts with: ${apiKey.substring(0, 10)}...`);
+
             const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${settings.openrouterApiKey}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': window.location.origin,
                     'X-Title': 'Tumdah'
@@ -769,6 +772,7 @@ const AdminPanel = ({ onNavigate }) => {
                                                 >
                                                     OpenRouter
                                                 </a>
+                                                {' '}(should start with "sk-or-")
                                             </span>
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-violet-600 pl-5 sm:pl-6 font-medium">
