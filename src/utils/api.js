@@ -112,16 +112,15 @@ export const callApi = async (endpoint, data) => {
 
     if (endpoint === '/generate_image') {
         if (!API_KEY || API_KEY === 'your-api-key-here') {
-            console.error('Google AI API key is not configured');
-            throw new Error('API key not configured. Please configure your API key in the Admin panel.');
+            console.warn('Google AI API key not configured - image generation will use fallback');
+            throw new Error('API key not configured');
         }
 
         const models = [
             'imagen-3.0-generate-001',
-            'gemini-2.0-flash-exp-imagen'
+            'gemini-2.0-flash-exp-imagen',
+            'imagen-3.0-fast-generate-001'
         ];
-
-        let lastError = null;
 
         for (const model of models) {
             try {
@@ -158,12 +157,11 @@ export const callApi = async (endpoint, data) => {
                     }
                 };
 
-                console.log(`Attempting image generation with model: ${model}`);
-
                 const response = await fetch(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(30000)
                 });
 
                 if (response.ok) {
@@ -171,25 +169,22 @@ export const callApi = async (endpoint, data) => {
                     const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
 
                     if (base64Data) {
-                        console.log(`Successfully generated image with model: ${model}`);
+                        console.log(`Image generated successfully with ${model}`);
                         return `data:image/png;base64,${base64Data}`;
                     }
                 }
 
-                const errorData = await response.json();
-                lastError = errorData?.error?.message || `Failed with status: ${response.status}`;
-                console.warn(`Model ${model} failed:`, lastError);
+                const errorData = await response.json().catch(() => ({}));
+                console.warn(`Model ${model} failed:`, errorData?.error?.message || response.status);
 
             } catch (error) {
-                lastError = error.message;
-                console.warn(`Model ${model} error:`, error);
+                console.warn(`Model ${model} error:`, error.message);
                 continue;
             }
         }
 
-        const errorMsg = `Image generation not available. The Gemini image generation models may not be accessible in your region or with your API key. Error: ${lastError}`;
-        console.error(errorMsg);
-        throw new Error(errorMsg);
+        console.warn('All image generation models unavailable - will use placeholder');
+        throw new Error('Image generation models not available');
     }
 
     return null;

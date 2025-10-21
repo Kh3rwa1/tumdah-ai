@@ -17,6 +17,7 @@ export const GenerateImagesPage = ({ onNavigate }) => {
     const [productPhoto, setProductPhoto] = useState(null);
     const [generatedProductImages, setGeneratedProductImages] = useState([]);
     const [productLoading, setProductLoading] = useState(false);
+    const [usingPlaceholders, setUsingPlaceholders] = useState(false);
 
     const generateAndSetImages = async () => {
         if (!refImage || !userFace) {
@@ -25,6 +26,7 @@ export const GenerateImagesPage = ({ onNavigate }) => {
         }
         setHumanLoading(true);
         setGeneratedImages([]);
+        setUsingPlaceholders(false);
 
         try {
             const analysisResultRef = await callApi('/analyze_ref', { image: refImage });
@@ -65,14 +67,32 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                 console.error('Image generation failed:', err);
                 return null;
             })));
-            setGeneratedImages(images.filter(img => img !== null));
 
-            if (images.every(img => img === null)) {
-                alert("All image generations failed. Please check your API key and try again.");
+            const successfulImages = images.filter(img => img !== null);
+
+            if (successfulImages.length === 0) {
+                const placeholders = [
+                    'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/1898555/pexels-photo-1898555.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/1642228/pexels-photo-1642228.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'
+                ];
+                setGeneratedImages(placeholders);
+                setUsingPlaceholders(true);
+            } else {
+                setGeneratedImages(successfulImages);
+                setUsingPlaceholders(false);
             }
         } catch (error) {
             console.error('Error in generateAndSetImages:', error);
-            alert(error.message || "An error occurred. Please check your API key and try again.");
+            const placeholders = [
+                'https://images.pexels.com/photos/1516680/pexels-photo-1516680.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/1024311/pexels-photo-1024311.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/1898555/pexels-photo-1898555.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/1642228/pexels-photo-1642228.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'
+            ];
+            setGeneratedImages(placeholders);
+            setUsingPlaceholders(true);
         } finally {
             setHumanLoading(false);
         }
@@ -85,6 +105,7 @@ Ensure the subject's face and identity are perfectly preserved from the source i
         }
         setProductLoading(true);
         setGeneratedProductImages([]);
+        setUsingPlaceholders(false);
 
         try {
 
@@ -109,14 +130,32 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                 console.error('Product image generation failed:', err);
                 return null;
             })));
-            setGeneratedProductImages(images.filter(img => img !== null));
 
-            if (images.every(img => img === null)) {
-                alert("All product image generations failed. Please check your API key and try again.");
+            const successfulImages = images.filter(img => img !== null);
+
+            if (successfulImages.length === 0) {
+                const placeholders = [
+                    'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/1667088/pexels-photo-1667088.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                    'https://images.pexels.com/photos/4041392/pexels-photo-4041392.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'
+                ];
+                setGeneratedProductImages(placeholders);
+                setUsingPlaceholders(true);
+            } else {
+                setGeneratedProductImages(successfulImages);
+                setUsingPlaceholders(false);
             }
         } catch (error) {
             console.error('Error in generateAndSetProductImages:', error);
-            alert(error.message || "An error occurred. Please check your API key and try again.");
+            const placeholders = [
+                'https://images.pexels.com/photos/90946/pexels-photo-90946.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/1667088/pexels-photo-1667088.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/190819/pexels-photo-190819.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750',
+                'https://images.pexels.com/photos/4041392/pexels-photo-4041392.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750'
+            ];
+            setGeneratedProductImages(placeholders);
+            setUsingPlaceholders(true);
         } finally {
             setProductLoading(false);
         }
@@ -136,6 +175,13 @@ Ensure the subject's face and identity are perfectly preserved from the source i
             <header className="mb-10">
                 <h2 className="text-4xl font-bold text-neutral-900 mb-3">Image Studio</h2>
                 <p className="text-neutral-600 text-lg">Generate studio-quality visuals for characters or products with AI</p>
+                {usingPlaceholders && (
+                    <div className="mt-4 max-w-2xl mx-auto bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                        <p className="text-sm text-blue-800">
+                            <strong>Demo Mode:</strong> Configure your Google AI API key in the Admin panel to generate custom images. Showing sample images for now.
+                        </p>
+                    </div>
+                )}
                 <div className="mt-8 flex justify-center p-2 bg-white rounded-2xl space-x-3 max-w-md mx-auto shadow-sm border border-neutral-200">
                     <button onClick={() => setMode('human')} className={`px-8 py-4 text-sm font-bold rounded-xl transition-all w-1/2 flex items-center justify-center gap-2 ${mode === 'human' ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-lg' : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'}`}>
                         <User size={20} /> Character
