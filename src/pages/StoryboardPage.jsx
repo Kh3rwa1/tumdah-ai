@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, Camera, Palette } from 'lucide-react';
 import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { callApi } from '../utils/api';
@@ -57,6 +57,45 @@ export const StoryboardPage = ({ onNavigate }) => {
     const [shotGenerationState, setShotGenerationState] = useState({});
     const [visualStyle, setVisualStyle] = useState("Cinematic, photorealistic, high-budget film aesthetic.");
     const [characterProfiles, setCharacterProfiles] = useState({});
+    const [styleTemplates, setStyleTemplates] = useState([]);
+    const [selectedStyleTemplate, setSelectedStyleTemplate] = useState(null);
+
+    useEffect(() => {
+        const loadStyleTemplates = async () => {
+            try {
+                const { supabase } = await import('../utils/supabase');
+                const { data, error } = await supabase
+                    .from('prompt_templates')
+                    .select('*')
+                    .eq('category', 'image_style')
+                    .eq('is_active', true)
+                    .order('is_default', { ascending: false });
+
+                if (error) throw error;
+                setStyleTemplates(data || []);
+
+                const defaultTemplate = data?.find(t => t.is_default);
+                if (defaultTemplate) {
+                    setSelectedStyleTemplate(defaultTemplate.id);
+                    setVisualStyle(defaultTemplate.prompt);
+                }
+            } catch (error) {
+                console.error('Error loading style templates:', error);
+            }
+        };
+
+        loadStyleTemplates();
+    }, []);
+
+    const handleStyleTemplateChange = (templateId) => {
+        setSelectedStyleTemplate(templateId);
+        const template = styleTemplates.find(t => t.id === templateId);
+        if (template) {
+            setVisualStyle(template.prompt);
+        } else {
+            setVisualStyle('Cinematic, photorealistic, high-budget film aesthetic.');
+        }
+    };
 
     const handleParseStory = async () => {
         if (story.trim() === "") return;
@@ -191,9 +230,44 @@ The final image must be of impeccable, film-production quality.`;
                 </header>
                 <div className="space-y-10">
                     <div className="bg-white border border-neutral-200 p-8 rounded-2xl shadow-md">
-                        <h3 className="text-2xl font-bold mb-4 text-neutral-900">Visual Style</h3>
-                        <p className="text-neutral-600 mb-4">Describe the overall aesthetic, mood, genre, and color palette</p>
-                        <input type="text" value={visualStyle} onChange={e => setVisualStyle(e.target.value)} className="w-full bg-neutral-50 border-2 border-neutral-300 rounded-xl p-4 outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg" />
+                        <h3 className="text-2xl font-bold mb-4 text-neutral-900 flex items-center gap-3">
+                            <Palette className="w-7 h-7 text-blue-600" />
+                            Visual Style
+                        </h3>
+                        <p className="text-neutral-600 mb-6">Choose a preset style or create your own</p>
+
+                        {styleTemplates.length > 0 && (
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-neutral-700 mb-3">
+                                    Style Preset
+                                </label>
+                                <select
+                                    value={selectedStyleTemplate || ''}
+                                    onChange={(e) => handleStyleTemplateChange(e.target.value || null)}
+                                    className="w-full bg-white border-2 border-neutral-300 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                                >
+                                    <option value="">Custom Style</option>
+                                    {styleTemplates.map(template => (
+                                        <option key={template.id} value={template.id}>
+                                            {template.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block text-sm font-semibold text-neutral-700 mb-3">
+                                Style Description
+                            </label>
+                            <textarea
+                                value={visualStyle}
+                                onChange={e => setVisualStyle(e.target.value)}
+                                rows="4"
+                                className="w-full bg-neutral-50 border-2 border-neutral-300 rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                                placeholder="Describe the overall aesthetic, mood, genre, and color palette..."
+                            />
+                        </div>
                     </div>
                     <div className="bg-white border border-neutral-200 p-8 rounded-2xl shadow-md">
                         <h3 className="text-2xl font-bold mb-6 text-neutral-900">Character Profiles</h3>

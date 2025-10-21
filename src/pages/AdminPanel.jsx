@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, Key, Sliders, Info, CheckCircle, XCircle, TrendingUp, Users, Image, Zap, Activity, DollarSign, BarChart3, Calendar, Clock, Shield, Database, Home, ArrowLeft } from 'lucide-react';
+import { Settings, Save, Key, Sliders, Info, CheckCircle, XCircle, TrendingUp, Users, Image, Zap, Activity, DollarSign, BarChart3, Calendar, Clock, Shield, Database, Home, ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '../components/Button';
 import StatCard from '../components/StatCard';
 import ChartCard from '../components/ChartCard';
+import PromptManager from '../components/PromptManager';
 import { fetchUsersCount, fetchUsageStats, fetchActivityLog, fetchSystemHealth } from '../utils/supabase';
 
 const AdminPanel = ({ onNavigate }) => {
@@ -307,6 +308,16 @@ const AdminPanel = ({ onNavigate }) => {
                             }`}
                         >
                             System Health
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('prompts')}
+                            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                                activeTab === 'prompts'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                    : 'text-neutral-600 hover:bg-neutral-100'
+                            }`}
+                        >
+                            Prompt Manager
                         </button>
                     </div>
                 </div>
@@ -838,6 +849,34 @@ const AdminPanel = ({ onNavigate }) => {
                                     </div>
                                 </div>
                             </ChartCard>
+                        </div>
+                    </div>
+                ) : activeTab === 'prompts' ? (
+                    <div className="space-y-8">
+                        <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+                            <div className="flex items-center gap-3 mb-6">
+                                <FileText className="w-6 h-6 text-blue-600" />
+                                <h2 className="text-2xl font-bold text-neutral-900">Prompt Templates Manager</h2>
+                            </div>
+                            <p className="text-neutral-600 mb-8">
+                                Manage AI prompts for story expansion and image style generation. Users can select from these templates when creating content.
+                            </p>
+
+                            <div className="space-y-12">
+                                <PromptManager
+                                    category="story_expansion"
+                                    title="Story Expansion Prompts"
+                                    description="Templates for expanding user story ideas with AI"
+                                />
+
+                                <div className="border-t border-neutral-200 pt-12">
+                                    <PromptManager
+                                        category="image_style"
+                                        title="Image Style Prompts"
+                                        description="Style templates for AI image generation"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : null}

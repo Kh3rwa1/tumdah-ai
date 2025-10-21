@@ -123,25 +123,44 @@ export const callApi = async (endpoint, data) => {
 
         const userIdea = (data.storyIdea || '').trim();
 
+        let expansionPrompt = null;
+        let enhancementPrompt = null;
+
+        try {
+            const { supabase } = await import('./supabase');
+            const { data: templates } = await supabase
+                .from('prompt_templates')
+                .select('prompt, name')
+                .eq('category', 'story_expansion')
+                .eq('is_active', true);
+
+            if (templates && templates.length > 0) {
+                expansionPrompt = templates.find(t => t.name === 'story_expansion_default')?.prompt;
+                enhancementPrompt = templates.find(t => t.name === 'story_enhancement_default')?.prompt;
+            }
+        } catch (error) {
+            console.warn('Could not load story prompts from database, using defaults');
+        }
+
+        if (!expansionPrompt) {
+            expansionPrompt = 'You are a story architect and master narrator. Expand this idea into a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose (not an outline), feel emotionally resonant, and be approximately 800-1500 words. Stay true to the original concept while enriching it with vivid details, compelling characters, and dramatic tension.';
+        }
+
+        if (!enhancementPrompt) {
+            enhancementPrompt = 'You are a story architect and master narrator. Rewrite and enhance this story. Improve the pacing, add more vivid details and sensory descriptions, deepen character development, heighten dramatic tension, and ensure a compelling narrative arc. Keep the core concept and plot but elevate the prose to professional, cinematic quality. Output approximately 1000-1500 words.';
+        }
+
         let systemPrompt;
         if (userIdea) {
             const isLongStory = userIdea.length > 500;
 
             if (isLongStory) {
-                systemPrompt = `You are a story architect and master narrator. The user has provided an existing story:
-
-"${userIdea.substring(0, 3000)}"
-
-Your task: Rewrite and enhance this story. Improve the pacing, add more vivid details and sensory descriptions, deepen character development, heighten dramatic tension, and ensure a compelling narrative arc. Keep the core concept and plot but elevate the prose to professional, cinematic quality. Output approximately 1000-1500 words.`;
+                systemPrompt = `${enhancementPrompt}\n\nHere is the story to enhance:\n\n"${userIdea.substring(0, 3000)}"`;
             } else {
-                systemPrompt = `You are a story architect and master narrator. The user has provided this story idea or concept:
-
-"${userIdea}"
-
-Your task: Expand this idea into a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose (not an outline), feel emotionally resonant, and be approximately 800-1500 words. Stay true to the user's original concept while enriching it with vivid details, compelling characters, and dramatic tension.`;
+                systemPrompt = `${expansionPrompt}\n\nUser's story idea:\n\n"${userIdea}"`;
             }
         } else {
-            systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
+            systemPrompt = expansionPrompt;
         }
 
         const payload = {
