@@ -16,7 +16,7 @@ const App = () => {
         switch (currentPage) {
             case '/': return <LandingPage onNavigate={navigate} />;
             case 'dashboard': return <CreativeSuite onNavigate={navigate} />;
-            case 'admin': return <AdminPanel />;
+            case 'admin': return <AdminPanel onNavigate={navigate} />;
             default: return <LandingPage onNavigate={navigate} />;
         }
     };

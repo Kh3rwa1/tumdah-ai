@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Settings, Save, Key, Sliders, Info, CheckCircle, XCircle, TrendingUp, Users, Image, Zap, Activity, DollarSign, BarChart3, Calendar, Clock, Shield, Database } from 'lucide-react';
+import { Settings, Save, Key, Sliders, Info, CheckCircle, XCircle, TrendingUp, Users, Image, Zap, Activity, DollarSign, BarChart3, Calendar, Clock, Shield, Database, Home, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/Button';
 import StatCard from '../components/StatCard';
 import ChartCard from '../components/ChartCard';
+import { fetchUsersCount, fetchUsageStats, fetchActivityLog, fetchSystemHealth } from '../utils/supabase';
 
-const AdminPanel = () => {
+const AdminPanel = ({ onNavigate }) => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [settings, setSettings] = useState({
         googleAiApiKey: '',
@@ -19,13 +20,62 @@ const AdminPanel = () => {
     const [apiTestResult, setApiTestResult] = useState(null);
 
     const [stats, setStats] = useState({
-        totalUsers: 50234,
-        totalImages: 2145623,
-        apiCalls: 8934,
-        activeUsers: 12453,
-        revenue: 142589,
+        totalUsers: 0,
+        totalImages: 0,
+        apiCalls: 0,
+        activeUsers: 0,
+        revenue: 0,
         avgResponseTime: 1.24,
     });
+    const [recentActivity, setRecentActivity] = useState([]);
+    const [systemHealth, setSystemHealth] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const loadData = async () => {
+        try {
+            setLoading(true);
+            const [usersCount, usageStats, activityLog, healthData] = await Promise.all([
+                fetchUsersCount(),
+                fetchUsageStats(),
+                fetchActivityLog(5),
+                fetchSystemHealth()
+            ]);
+
+            setStats({
+                totalUsers: usersCount,
+                totalImages: usageStats?.total_images || 0,
+                apiCalls: usageStats?.api_calls_today || 0,
+                activeUsers: usageStats?.active_users_now || 0,
+                revenue: usageStats?.monthly_revenue || 0,
+                avgResponseTime: usageStats?.avg_response_time || 1.24,
+            });
+
+            const formattedActivity = activityLog.map(log => ({
+                id: log.id,
+                user: log.user_name,
+                action: log.action,
+                time: new Date(log.created_at).toLocaleString('en-US', {
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: true
+                }),
+                type: log.action_type
+            }));
+            setRecentActivity(formattedActivity);
+
+            const formattedHealth = healthData.map(service => ({
+                service: service.service_name,
+                status: service.status,
+                uptime: `${service.uptime_percentage}%`,
+                responseTime: service.response_time
+            }));
+            setSystemHealth(formattedHealth);
+        } catch (error) {
+            console.error('Error loading data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         const savedSettings = localStorage.getItem('adminSettings');
@@ -38,15 +88,13 @@ const AdminPanel = () => {
             }
         }
 
-        const statsInterval = setInterval(() => {
-            setStats(prev => ({
-                ...prev,
-                apiCalls: prev.apiCalls + Math.floor(Math.random() * 5),
-                activeUsers: prev.activeUsers + Math.floor(Math.random() * 10 - 5),
-            }));
-        }, 5000);
+        loadData();
 
-        return () => clearInterval(statsInterval);
+        const refreshInterval = setInterval(() => {
+            loadData();
+        }, 30000);
+
+        return () => clearInterval(refreshInterval);
     }, []);
 
     const handleSave = () => {
@@ -104,20 +152,6 @@ const AdminPanel = () => {
         }
     };
 
-    const recentActivity = [
-        { id: 1, user: 'Sarah Chen', action: 'Generated storyboard', time: '2 minutes ago', type: 'generation' },
-        { id: 2, user: 'Mike Johnson', action: 'Uploaded reference image', time: '5 minutes ago', type: 'upload' },
-        { id: 3, user: 'Emma Davis', action: 'Created new project', time: '12 minutes ago', type: 'project' },
-        { id: 4, user: 'Alex Kumar', action: 'Generated 4 images', time: '18 minutes ago', type: 'generation' },
-        { id: 5, user: 'Lisa Wong', action: 'Exported storyboard', time: '25 minutes ago', type: 'export' },
-    ];
-
-    const systemHealth = [
-        { service: 'API Server', status: 'Operational', uptime: '99.98%', responseTime: '124ms' },
-        { service: 'Database', status: 'Operational', uptime: '99.99%', responseTime: '8ms' },
-        { service: 'AI Processing', status: 'Operational', uptime: '99.95%', responseTime: '1.2s' },
-        { service: 'Storage', status: 'Operational', uptime: '100%', responseTime: '45ms' },
-    ];
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-blue-50/30">
@@ -137,6 +171,14 @@ const AdminPanel = () => {
                             <div className="px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <span className="text-sm font-semibold text-emerald-700">All Systems Operational</span>
                             </div>
+                            <Button
+                                onClick={() => onNavigate('/')}
+                                variant="outline"
+                                className="flex items-center gap-2"
+                            >
+                                <ArrowLeft className="w-4 h-4" />
+                                Back to Home
+                            </Button>
                         </div>
                     </div>
 
@@ -186,7 +228,14 @@ const AdminPanel = () => {
             </div>
 
             <div className="max-w-[1600px] mx-auto px-8 py-8">
-                {activeTab === 'dashboard' && (
+                {loading ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-neutral-600 font-semibold">Loading dashboard data...</p>
+                        </div>
+                    </div>
+                ) : activeTab === 'dashboard' ? (
                     <div className="space-y-8">
                         {savedStatus && (
                             <div className={`p-4 rounded-xl flex items-center gap-3 ${
@@ -350,9 +399,7 @@ const AdminPanel = () => {
                             </div>
                         </div>
                     </div>
-                )}
-
-                {activeTab === 'settings' && (
+                ) : activeTab === 'settings' ? (
                     <div className="space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
                             <div className="bg-gradient-to-r from-blue-600 to-emerald-600 p-8">
@@ -505,9 +552,7 @@ const AdminPanel = () => {
                             </Button>
                         </div>
                     </div>
-                )}
-
-                {activeTab === 'analytics' && (
+                ) : activeTab === 'analytics' ? (
                     <div className="space-y-6">
                         <ChartCard title="User Growth" subtitle="Monthly active users over time">
                             <div className="h-64 flex items-end justify-around gap-2 mt-4">
@@ -609,9 +654,7 @@ const AdminPanel = () => {
                             </ChartCard>
                         </div>
                     </div>
-                )}
-
-                {activeTab === 'system' && (
+                ) : activeTab === 'system' ? (
                     <div className="space-y-6">
                         <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
                             <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
@@ -707,7 +750,7 @@ const AdminPanel = () => {
                             </ChartCard>
                         </div>
                     </div>
-                )}
+                ) : null}
             </div>
         </div>
     );
