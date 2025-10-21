@@ -113,69 +113,83 @@ export const callApi = async (endpoint, data) => {
     if (endpoint === '/generate_image') {
         if (!API_KEY || API_KEY === 'your-api-key-here') {
             console.error('Google AI API key is not configured');
-            throw new Error('API key not configured. Please add VITE_GOOGLE_AI_API_KEY to your .env file.');
+            throw new Error('API key not configured. Please configure your API key in the Admin panel.');
         }
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${API_KEY}`;
+        const models = [
+            'imagen-3.0-generate-001',
+            'gemini-2.0-flash-exp-imagen'
+        ];
 
-        const parts = [];
+        let lastError = null;
 
-        if (data.image) {
-            parts.push({
-                inline_data: {
-                    mime_type: "image/jpeg",
-                    data: data.image.split(',')[1]
+        for (const model of models) {
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+
+                const parts = [];
+
+                if (data.image) {
+                    parts.push({
+                        inline_data: {
+                            mime_type: "image/jpeg",
+                            data: data.image.split(',')[1]
+                        }
+                    });
                 }
-            });
-        }
 
-        if (data.styleImage) {
-            parts.push({
-                inline_data: {
-                    mime_type: "image/jpeg",
-                    data: data.styleImage.split(',')[1]
+                if (data.styleImage) {
+                    parts.push({
+                        inline_data: {
+                            mime_type: "image/jpeg",
+                            data: data.styleImage.split(',')[1]
+                        }
+                    });
                 }
-            });
-        }
 
-        parts.push({ text: data.prompt });
+                parts.push({ text: data.prompt });
 
-        const payload = {
-            contents: [{ parts }],
-            generationConfig: {
-                imageConfig: {
-                    aspectRatio: "16:9"
+                const payload = {
+                    contents: [{ parts }],
+                    generationConfig: {
+                        imageConfig: {
+                            aspectRatio: "16:9"
+                        }
+                    }
+                };
+
+                console.log(`Attempting image generation with model: ${model}`);
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
+
+                    if (base64Data) {
+                        console.log(`Successfully generated image with model: ${model}`);
+                        return `data:image/png;base64,${base64Data}`;
+                    }
                 }
-            }
-        };
 
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
                 const errorData = await response.json();
-                console.error("API error response:", errorData);
-                const errorMessage = errorData?.error?.message || `API call failed with status: ${response.status}`;
-                throw new Error(errorMessage);
+                lastError = errorData?.error?.message || `Failed with status: ${response.status}`;
+                console.warn(`Model ${model} failed:`, lastError);
+
+            } catch (error) {
+                lastError = error.message;
+                console.warn(`Model ${model} error:`, error);
+                continue;
             }
-
-            const result = await response.json();
-            const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
-
-            if (!base64Data) {
-                console.error("Unexpected response structure:", result);
-                throw new Error("No image data found in response.");
-            }
-
-            return `data:image/png;base64,${base64Data}`;
-        } catch (error) {
-            console.error("Image generation error:", error);
-            throw error;
         }
+
+        const errorMsg = `Image generation not available. The Gemini image generation models may not be accessible in your region or with your API key. Error: ${lastError}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
     }
 
     return null;

@@ -163,54 +163,78 @@ const AdminPanel = ({ onNavigate }) => {
         setTestingApi(true);
         setApiTestResult(null);
 
-        try {
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${settings.googleAiApiKey}`;
+        const models = [
+            'imagen-3.0-generate-001',
+            'gemini-2.0-flash-exp-imagen',
+            'gemini-2.0-flash-exp'
+        ];
 
-            const response = await fetch(testUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+        for (const model of models) {
+            try {
+                const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.googleAiApiKey}`;
+
+                const isImageModel = model.includes('imagen');
+                const payload = isImageModel ? {
                     contents: [{
-                        parts: [{ text: 'A simple red circle' }]
+                        parts: [{ text: 'A simple red circle on white background' }]
                     }],
                     generationConfig: {
                         imageConfig: {
                             aspectRatio: "1:1"
                         }
                     }
-                })
-            });
+                } : {
+                    contents: [{
+                        parts: [{ text: 'Say "test successful" and nothing else.' }]
+                    }]
+                };
 
-            if (response.ok) {
-                const result = await response.json();
-                const hasImageData = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
-
-                if (hasImageData) {
-                    setApiTestResult({
-                        success: true,
-                        message: 'API key is valid! Image generation model working.'
-                    });
-                } else {
-                    setApiTestResult({
-                        success: false,
-                        message: 'API key valid but image generation failed. Check model access.'
-                    });
-                }
-            } else {
-                const error = await response.json();
-                setApiTestResult({
-                    success: false,
-                    message: error?.error?.message || `Failed: ${response.status}`
+                const response = await fetch(testUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
+
+                if (response.ok) {
+                    const result = await response.json();
+
+                    if (isImageModel) {
+                        const hasImageData = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
+                        if (hasImageData) {
+                            setApiTestResult({
+                                success: true,
+                                message: `API key valid! Using ${model} for image generation.`
+                            });
+                            setTestingApi(false);
+                            return;
+                        }
+                    } else {
+                        const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (textResponse) {
+                            setApiTestResult({
+                                success: true,
+                                message: `API key valid! Using ${model}. Note: Image models may have limited availability.`
+                            });
+                            setTestingApi(false);
+                            return;
+                        }
+                    }
+                }
+
+                const error = await response.json();
+                console.warn(`Model ${model} failed:`, error?.error?.message);
+
+            } catch (error) {
+                console.warn(`Model ${model} error:`, error);
+                continue;
             }
-        } catch (error) {
-            setApiTestResult({
-                success: false,
-                message: `Error: ${error.message}`
-            });
-        } finally {
-            setTestingApi(false);
         }
+
+        setApiTestResult({
+            success: false,
+            message: 'API key may be valid but image models are not accessible. Your key might work for text only.'
+        });
+        setTestingApi(false);
     };
 
 
@@ -521,11 +545,11 @@ const AdminPanel = ({ onNavigate }) => {
                                                 >
                                                     Google AI Studio
                                                 </a>
-                                                {' '}and ensure your key has access to the <strong>Gemini 2.5 Flash Image</strong> model.
+                                                . The app will automatically try multiple image generation models.
                                             </span>
                                         </p>
                                         <p className="text-xs text-neutral-400 pl-6">
-                                            Testing uses the gemini-2.5-flash-image model for actual image generation validation.
+                                            Testing tries: Imagen 3.0, Gemini 2.0 Flash Imagen, then Gemini 2.0 Flash (text fallback). Image models have regional availability.
                                         </p>
                                     </div>
                                 </div>
