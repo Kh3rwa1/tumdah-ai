@@ -171,8 +171,8 @@ Ensure the subject's face and identity are perfectly preserved from the source i
     };
 
     return (
-        <div className="h-screen flex flex-col bg-gradient-to-br from-white to-neutral-50 overflow-hidden">
-            <header className="flex-shrink-0 px-4 sm:px-6 md:px-10 py-4 sm:py-5 border-b border-neutral-200 bg-white/80 backdrop-blur-sm">
+        <div className="h-screen flex flex-col bg-gradient-to-br from-white to-neutral-50">
+            <header className="flex-shrink-0 px-4 sm:px-6 md:px-10 py-4 sm:py-5 border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                     <div>
                         <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900">Image Studio</h2>
@@ -197,17 +197,17 @@ Ensure the subject's face and identity are perfectly preserved from the source i
             </header>
 
             {mode === 'human' && (
-                <div className="flex-1 overflow-hidden p-4 sm:p-6 md:p-8">
-                    <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4 lg:sticky lg:top-4 lg:self-start">
                             <Uploader label="1. Style Reference" onUpload={setRefImage} imageUrl={refImage} />
                             <Uploader label="2. Character Photo" onUpload={setUserFace} imageUrl={userFace} />
                             <Button onClick={generateAndSetImages} className="w-full" disabled={humanLoading}>
                                 {humanLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
                             </Button>
                         </aside>
-                        <main className="lg:col-span-3 flex flex-col min-h-0">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 h-full overflow-y-auto">
+                        <main className="lg:col-span-3 flex flex-col">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             {humanLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!humanLoading && generatedImages.length > 0 && generatedImages.map((src, index) => (
@@ -225,7 +225,7 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!humanLoading && generatedImages.length === 0 && (
-                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 min-h-[200px]">
+                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 aspect-video">
                                     <div className="text-center">
                                         <ImageIcon className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-2 sm:mb-3"/>
                                         <p className="text-sm sm:text-base font-bold px-4">Generated images appear here</p>
@@ -234,8 +234,8 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             )}
                             </div>
                             {generatedImages.length > 0 && !humanLoading && (
-                                <div className="flex justify-center mt-3 sm:mt-4 flex-shrink-0">
-                                    <Button onClick={generateAndSetImages} disabled={humanLoading} variant="secondary" size="sm">Regenerate All</Button>
+                                <div className="flex justify-center mt-4 sm:mt-6">
+                                    <Button onClick={generateAndSetImages} disabled={humanLoading} variant="secondary">Regenerate All</Button>
                                 </div>
                             )}
                         </main>
@@ -244,17 +244,17 @@ Ensure the subject's face and identity are perfectly preserved from the source i
             )}
 
             {mode === 'product' && (
-                <div className="flex-1 overflow-hidden p-4 sm:p-6 md:p-8">
-                    <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
-                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+                        <aside className="lg:col-span-1 flex flex-col gap-3 sm:gap-4 lg:sticky lg:top-4 lg:self-start">
                             <Uploader label="1. Style Reference" onUpload={setProductStyleRef} imageUrl={productStyleRef} />
                             <Uploader label="2. Product Photo" onUpload={setProductPhoto} imageUrl={productPhoto} />
                             <Button onClick={generateAndSetProductImages} className="w-full" disabled={productLoading}>
                                 {productLoading ? <LoadingSpinner/> : <> <Sparkles className="h-4 w-4 sm:h-5 sm:w-5"/> Generate </>}
                             </Button>
                         </aside>
-                        <main className="lg:col-span-3 flex flex-col min-h-0">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 h-full overflow-y-auto">
+                        <main className="lg:col-span-3 flex flex-col">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             {productLoading && [...Array(4)].map((_, i) => <div key={i} className="aspect-video bg-gradient-to-br from-neutral-100 to-neutral-50 rounded-xl sm:rounded-2xl flex items-center justify-center border border-neutral-200 shadow-sm"><LoadingSpinner/></div>)}
 
                             {!productLoading && generatedProductImages.length > 0 && generatedProductImages.map((src, index) => (
@@ -272,7 +272,7 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             ))}
 
                             {!productLoading && generatedProductImages.length === 0 && (
-                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 min-h-[200px]">
+                                <div className="sm:col-span-2 flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 rounded-xl sm:rounded-2xl text-neutral-400 border-2 border-dashed border-neutral-300 aspect-video">
                                     <div className="text-center">
                                         <Package className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-2 sm:mb-3"/>
                                         <p className="text-sm sm:text-base font-bold px-4">Product shots appear here</p>
@@ -281,8 +281,8 @@ Ensure the subject's face and identity are perfectly preserved from the source i
                             )}
                             </div>
                             {generatedProductImages.length > 0 && !productLoading && (
-                                <div className="flex justify-center mt-3 sm:mt-4 flex-shrink-0">
-                                    <Button onClick={generateAndSetProductImages} disabled={productLoading} variant="secondary" size="sm">Regenerate All</Button>
+                                <div className="flex justify-center mt-4 sm:mt-6">
+                                    <Button onClick={generateAndSetProductImages} disabled={productLoading} variant="secondary">Regenerate All</Button>
                                 </div>
                             )}
                         </main>
