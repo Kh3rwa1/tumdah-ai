@@ -120,14 +120,26 @@ export const callApi = async (endpoint, data) => {
         }
 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
-        const systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
+
+        const userIdea = data.storyIdea || '';
+
+        let systemPrompt;
+        if (userIdea.trim()) {
+            systemPrompt = `You are a story architect and master narrator. The user has provided this story idea or concept:
+
+"${userIdea}"
+
+Your task: Expand this idea into a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose (not an outline), feel emotionally resonant, and be approximately 800-1500 words. Stay true to the user's original concept while enriching it with vivid details, compelling characters, and dramatic tension.`;
+        } else {
+            systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
+        }
 
         const payload = {
             contents: [{ parts: [{ text: systemPrompt }] }]
         };
 
         try {
-            console.log('Generating story with Gemini...');
+            console.log('Generating story with Gemini...', userIdea ? `Based on idea: "${userIdea.substring(0, 50)}..."` : 'Random story');
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
 
             if (!response.ok) {

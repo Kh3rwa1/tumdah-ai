@@ -159,8 +159,9 @@ The final image must be of impeccable, film-production quality.`;
 
     const handleGenerateStory = async () => {
         setLoading(true);
-        setStory("Generating a new story...");
-        const newStory = await callApi('/generate_story', {});
+        const originalStory = story;
+        setStory("Generating your story...");
+        const newStory = await callApi('/generate_story', { storyIdea: originalStory });
         setStory(newStory);
         setLoading(false);
     };
@@ -172,10 +173,10 @@ The final image must be of impeccable, film-production quality.`;
                     <h2 className="text-5xl font-bold text-neutral-900 mb-4">Storyboard Builder</h2>
                     <p className="text-neutral-600 text-xl">Transform your script into a cinematic blueprint</p>
                 </header>
-                <textarea className="w-full h-96 bg-white border-2 border-neutral-300 text-neutral-900 rounded-2xl p-6 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-sm text-lg" value={story} onChange={(e) => setStory(e.target.value)} placeholder="Paste your story here or generate one with AI..."></textarea>
+                <textarea className="w-full h-96 bg-white border-2 border-neutral-300 text-neutral-900 rounded-2xl p-6 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none shadow-sm text-lg" value={story} onChange={(e) => setStory(e.target.value)} placeholder="Write your story idea here (e.g., 'A detective discovers a portal to another dimension') and click 'Expand with AI', or paste your full story and click 'Analyze Script'..."></textarea>
                 <div className="flex justify-center mt-8 space-x-4">
                     <Button onClick={handleParseStory} disabled={loading || story.trim() === ""} size="lg">Analyze Script</Button>
-                    <Button onClick={handleGenerateStory} disabled={loading} variant="outline" size="lg">Generate Story</Button>
+                    <Button onClick={handleGenerateStory} disabled={loading} variant="outline" size="lg">Expand with AI</Button>
                 </div>
             </div>
         );
