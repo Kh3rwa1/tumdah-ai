@@ -1,6 +1,7 @@
 import React, { useState, useCallback, createContext } from 'react';
 import { LandingPage } from './src/pages/LandingPage';
 import { CreativeSuite } from './src/pages/CreativeSuite';
+import AdminPanel from './src/pages/AdminPanel';
 
 const AppContext = createContext();
 
@@ -15,6 +16,7 @@ const App = () => {
         switch (currentPage) {
             case '/': return <LandingPage onNavigate={navigate} />;
             case 'dashboard': return <CreativeSuite onNavigate={navigate} />;
+            case 'admin': return <AdminPanel />;
             default: return <LandingPage onNavigate={navigate} />;
         }
     };

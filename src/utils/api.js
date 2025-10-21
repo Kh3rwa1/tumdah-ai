@@ -1,6 +1,20 @@
-const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
+const getApiKey = () => {
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+        try {
+            const settings = JSON.parse(savedSettings);
+            if (settings.googleAiApiKey) {
+                return settings.googleAiApiKey;
+            }
+        } catch (e) {
+            console.error('Failed to load settings:', e);
+        }
+    }
+    return import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
+};
 
 export const callApi = async (endpoint, data) => {
+    const API_KEY = getApiKey();
     if (endpoint === '/export_storyboard') {
         return new Promise(resolve => setTimeout(() => resolve({ zipFile: { name: "storyboard.zip", size: 1024 * 1024 } }), 1000));
     }

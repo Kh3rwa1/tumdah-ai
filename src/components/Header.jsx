@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button } from './Button';
+import { Settings } from 'lucide-react';
 
 export const Header = ({ onGoHome, onNavigate }) => (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-white/80 border-b border-neutral-200 shadow-sm">
+    <header className="bg-white border-b border-neutral-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-18">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={onGoHome}>
                 <img src="/icon.png" alt="Tumdah" className="h-9 w-9" />
@@ -12,6 +13,13 @@ export const Header = ({ onGoHome, onNavigate }) => (
                 <a href="#features" className="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-semibold">Features</a>
                 <a href="#pricing" className="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-semibold">Pricing</a>
                 <a href="#faq" className="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-semibold">FAQ</a>
+                <button
+                    onClick={() => onNavigate('admin')}
+                    className="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-semibold flex items-center gap-2"
+                >
+                    <Settings className="w-4 h-4" />
+                    Admin
+                </button>
             </nav>
             <div className="flex items-center space-x-3">
                 <Button onClick={() => alert('Coming soon!')} variant="ghost" size="sm" className="px-5 py-2.5 text-sm">Login</Button>
