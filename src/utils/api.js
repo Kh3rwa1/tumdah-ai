@@ -105,9 +105,11 @@ export const callApi = async (endpoint, data) => {
     if (endpoint === '/parse_story') {
         const OPENROUTER_KEY = await getOpenRouterApiKey();
 
+        console.log('[Story Parse] OpenRouter key status:', OPENROUTER_KEY ? `Present (${OPENROUTER_KEY.substring(0, 10)}...)` : 'Missing');
+
         if (!OPENROUTER_KEY) {
             console.error('OpenRouter API key is not configured for story parsing');
-            throw new Error('OpenRouter API key not configured');
+            throw new Error('OpenRouter API key not configured. Please add it in Admin Panel → Settings.');
         }
 
         const systemPrompt = `You are a Master AI Cinematographer. Your task is to transform a written story into a detailed, professional cinematic blueprint in a structured JSON format. Analyze the narrative and emotional arcs to make expert cinematographic decisions. For each narrative beat, provide a sequence of specific shot recommendations. Each recommendation MUST include: 'shot_type', 'caption', 'lens_choice', 'aperture', and 'camera_movement'. The final output MUST be a single, valid JSON object with no markdown. The JSON structure should follow this schema: { "story_title": "...", "logline": "...", "cast_refs": { "[CHARACTER_NAME]": { "name": "...", "description": "..." } }, "scenes": [ { "scene_title": "...", "location": "...", "description": "...", "mood": "...", "lighting_setup": "...", "color_palette": "...", "beats": [ { "beat_title": "...", "description": "...", "shot_recommendations": [ { "shot_type": "...", "caption": "...", "lens_choice": "...", "aperture": "...", "camera_movement": "..." } ] } ] } ] }`;
@@ -122,11 +124,11 @@ export const callApi = async (endpoint, data) => {
         };
 
         try {
-            console.log('Parsing story with OpenRouter (DeepSeek)...');
+            console.log('[Story Parse] Parsing with OpenRouter (DeepSeek)...');
             const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'Authorization': `Bearer ${OPENROUTER_KEY.trim()}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': window.location.origin,
                     'X-Title': 'Tumdah'
@@ -134,22 +136,29 @@ export const callApi = async (endpoint, data) => {
                 body: JSON.stringify(payload)
             });
 
+            console.log('[Story Parse] Response status:', response.status);
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('Story parsing failed:', errorData?.error?.message || response.status);
+                console.error('[Story Parse] Failed:', errorData?.error?.message || response.status);
                 throw new Error(`API call failed: ${response.status}`);
             }
 
             const result = await response.json();
+            console.log('[Story Parse] Response received:', {
+                hasChoices: !!result?.choices,
+                hasContent: !!result?.choices?.[0]?.message?.content
+            });
+
             let text = result?.choices?.[0]?.message?.content;
 
             if (!text) {
-                console.error('No text in response:', result);
+                console.error('[Story Parse] No text in response:', result);
                 return null;
             }
 
             text = text.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
-            console.log('Story parsed successfully with OpenRouter');
+            console.log('[Story Parse] Success! Parsed JSON length:', text.length);
             return JSON.parse(text);
         } catch (error) {
             console.error("Story parsing error:", error);
@@ -160,9 +169,11 @@ export const callApi = async (endpoint, data) => {
     if (endpoint === '/generate_story') {
         const OPENROUTER_KEY = await getOpenRouterApiKey();
 
+        console.log('[Story Gen] OpenRouter key status:', OPENROUTER_KEY ? `Present (${OPENROUTER_KEY.substring(0, 10)}...)` : 'Missing');
+
         if (!OPENROUTER_KEY) {
             console.error('OpenRouter API key is not configured for story generation');
-            return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
+            return "❌ ERROR: OpenRouter API key not configured.\n\nPlease add your OpenRouter API key in the Admin Panel → Settings → OpenRouter AI Configuration.\n\nGet your key from: https://openrouter.ai/keys";
         }
 
         const userIdea = (data.storyIdea || '').trim();
@@ -214,34 +225,45 @@ export const callApi = async (endpoint, data) => {
         };
 
         try {
-            console.log('Generating story with OpenRouter (DeepSeek)...', userIdea ? `Input length: ${userIdea.length} chars` : 'Random story');
+            console.log('[Story Gen] Generating with OpenRouter (DeepSeek)...', userIdea ? `Input length: ${userIdea.length} chars` : 'Random story');
+            console.log('[Story Gen] Using prompt length:', systemPrompt.length);
+
             const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'Authorization': `Bearer ${OPENROUTER_KEY.trim()}`,
                     'Content-Type': 'application/json',
                     'HTTP-Referer': window.location.origin,
                     'X-Title': 'Tumdah'
                 },
                 body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(60000)
+                signal: AbortSignal.timeout(90000)
             });
+
+            console.log('[Story Gen] Response status:', response.status);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('Story generation failed:', errorData?.error?.message || response.status, errorData);
+                console.error('[Story Gen] Failed:', errorData?.error?.message || response.status, errorData);
                 throw new Error(errorData?.error?.message || `API call failed: ${response.status}`);
             }
 
             const result = await response.json();
+            console.log('[Story Gen] Response received:', {
+                hasChoices: !!result?.choices,
+                choicesLength: result?.choices?.length,
+                hasMessage: !!result?.choices?.[0]?.message,
+                hasContent: !!result?.choices?.[0]?.message?.content
+            });
+
             const storyText = result?.choices?.[0]?.message?.content;
 
             if (storyText) {
-                console.log('Story generated successfully with OpenRouter, length:', storyText.length);
+                console.log('[Story Gen] Success! Story length:', storyText.length);
                 return storyText;
             }
 
-            console.error('No text in story response:', result);
+            console.error('[Story Gen] No text in response:', result);
             throw new Error('No story text in API response');
         } catch (error) {
             console.error("Story generation error:", error.message, error);
