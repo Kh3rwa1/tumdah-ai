@@ -10,6 +10,7 @@ const AdminPanel = ({ onNavigate }) => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [settings, setSettings] = useState({
         googleAiApiKey: '',
+        openrouterApiKey: '',
         appName: 'tumdah',
         maxImageGenerations: 4,
         imageAspectRatio: '16:9',
@@ -19,6 +20,8 @@ const AdminPanel = ({ onNavigate }) => {
     const [savedStatus, setSavedStatus] = useState(null);
     const [testingApi, setTestingApi] = useState(false);
     const [apiTestResult, setApiTestResult] = useState(null);
+    const [testingOpenRouter, setTestingOpenRouter] = useState(false);
+    const [openRouterTestResult, setOpenRouterTestResult] = useState(null);
 
     const [stats, setStats] = useState({
         totalUsers: 0,
@@ -101,6 +104,16 @@ const AdminPanel = ({ onNavigate }) => {
                 if (data?.value?.api_key) {
                     setSettings(prev => ({ ...prev, googleAiApiKey: data.value.api_key }));
                 }
+
+                const { data: openRouterData } = await supabase
+                    .from('app_settings')
+                    .select('value')
+                    .eq('key', 'openrouter_api_key')
+                    .maybeSingle();
+
+                if (openRouterData?.value?.api_key) {
+                    setSettings(prev => ({ ...prev, openrouterApiKey: openRouterData.value.api_key }));
+                }
             } catch (e) {
                 console.error('Failed to load API key from Supabase:', e);
             }
@@ -156,6 +169,34 @@ const AdminPanel = ({ onNavigate }) => {
                         }]);
                 }
             }
+
+            if (settings.openrouterApiKey) {
+                localStorage.setItem('VITE_OPENROUTER_API_KEY', settings.openrouterApiKey);
+
+                const { data: existingOpenRouter } = await supabase
+                    .from('app_settings')
+                    .select('id')
+                    .eq('key', 'openrouter_api_key')
+                    .maybeSingle();
+
+                if (existingOpenRouter) {
+                    await supabase
+                        .from('app_settings')
+                        .update({ value: { api_key: settings.openrouterApiKey } })
+                        .eq('id', existingOpenRouter.id);
+                } else {
+                    await supabase
+                        .from('app_settings')
+                        .insert([{
+                            key: 'openrouter_api_key',
+                            value: { api_key: settings.openrouterApiKey },
+                            description: 'OpenRouter API key for AI story generation',
+                            category: 'api',
+                            is_sensitive: true
+                        }]);
+                }
+            }
+
             setSavedStatus('success');
             setTimeout(() => setSavedStatus(null), 3000);
         } catch (e) {
@@ -246,6 +287,67 @@ const AdminPanel = ({ onNavigate }) => {
             message: 'API key may be valid but image models are not accessible. Your key might work for text only.'
         });
         setTestingApi(false);
+    };
+
+    const testOpenRouterKey = async () => {
+        if (!settings.openrouterApiKey) {
+            setOpenRouterTestResult({ success: false, message: 'Please enter an OpenRouter API key first' });
+            return;
+        }
+
+        setTestingOpenRouter(true);
+        setOpenRouterTestResult(null);
+
+        try {
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${settings.openrouterApiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Tumdah'
+                },
+                body: JSON.stringify({
+                    model: 'tngtech/deepseek-r1t2-chimera:free',
+                    messages: [{
+                        role: 'user',
+                        content: 'Say "test successful" and nothing else.'
+                    }],
+                    max_tokens: 50
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const message = result?.choices?.[0]?.message?.content;
+
+                if (message) {
+                    setOpenRouterTestResult({
+                        success: true,
+                        message: 'API key valid! OpenRouter is ready for story generation.'
+                    });
+                } else {
+                    setOpenRouterTestResult({
+                        success: false,
+                        message: 'Unexpected response format from OpenRouter.'
+                    });
+                }
+            } else {
+                const error = await response.json();
+                setOpenRouterTestResult({
+                    success: false,
+                    message: error?.error?.message || 'Failed to verify API key. Please check your key.'
+                });
+            }
+        } catch (error) {
+            console.error('OpenRouter test error:', error);
+            setOpenRouterTestResult({
+                success: false,
+                message: 'Network error. Please check your connection.'
+            });
+        } finally {
+            setTestingOpenRouter(false);
+        }
     };
 
 
@@ -575,6 +677,75 @@ const AdminPanel = ({ onNavigate }) => {
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-amber-600 pl-5 sm:pl-6 font-medium">
                                             Note: Google's image generation models (Imagen) have very limited availability. Most API keys currently show placeholder images. The app uses Gemini for text analysis and will generate real images when models become available in your region.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
+                            <div className="bg-gradient-to-r from-violet-600 to-blue-600 p-4 sm:p-6 lg:p-8">
+                                <div className="flex items-center gap-2 sm:gap-3 text-white">
+                                    <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">OpenRouter AI Configuration</h2>
+                                </div>
+                            </div>
+
+                            <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-neutral-700 mb-2 sm:mb-3">
+                                        OpenRouter API Key
+                                    </label>
+                                    <div className="space-y-3">
+                                        <input
+                                            type="password"
+                                            value={settings.openrouterApiKey}
+                                            onChange={(e) => setSettings({ ...settings, openrouterApiKey: e.target.value })}
+                                            className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-neutral-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                                            placeholder="Enter your OpenRouter API key"
+                                        />
+                                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                                            <Button
+                                                onClick={testOpenRouterKey}
+                                                disabled={testingOpenRouter || !settings.openrouterApiKey}
+                                                variant="secondary"
+                                                className="text-xs sm:text-sm w-full sm:w-auto"
+                                            >
+                                                {testingOpenRouter ? 'Testing...' : 'Test API Key'}
+                                            </Button>
+                                            {openRouterTestResult && (
+                                                <div className={`flex items-center gap-2 px-3 py-2 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold ${
+                                                    openRouterTestResult.success
+                                                        ? 'bg-emerald-50 text-emerald-700'
+                                                        : 'bg-red-50 text-red-700'
+                                                }`}>
+                                                    {openRouterTestResult.success ? (
+                                                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                    ) : (
+                                                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                                    )}
+                                                    <span className="break-words">{openRouterTestResult.message}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 space-y-2">
+                                        <p className="text-xs sm:text-sm text-neutral-500 flex items-start gap-2">
+                                            <Info className="w-3 h-3 sm:w-4 sm:h-4 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Get your API key from{' '}
+                                                <a
+                                                    href="https://openrouter.ai/keys"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-violet-600 hover:text-violet-700 underline font-semibold"
+                                                >
+                                                    OpenRouter
+                                                </a>
+                                            </span>
+                                        </p>
+                                        <p className="text-[10px] sm:text-xs text-violet-600 pl-5 sm:pl-6 font-medium">
+                                            Using model: tngtech/deepseek-r1t2-chimera:free for AI story generation and script analysis.
                                         </p>
                                     </div>
                                 </div>

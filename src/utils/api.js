@@ -28,6 +28,36 @@ const getApiKey = async () => {
     return import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
 };
 
+const getOpenRouterApiKey = async () => {
+    try {
+        const { supabase } = await import('./supabase');
+        const { data, error } = await supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', 'openrouter_api_key')
+            .maybeSingle();
+
+        if (!error && data?.value?.api_key) {
+            return data.value.api_key;
+        }
+    } catch (e) {
+        console.error('Failed to load OpenRouter API key from Supabase:', e);
+    }
+
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+        try {
+            const settings = JSON.parse(savedSettings);
+            if (settings.openrouterApiKey) {
+                return settings.openrouterApiKey;
+            }
+        } catch (e) {
+            console.error('Failed to load settings from localStorage:', e);
+        }
+    }
+    return import.meta.env.VITE_OPENROUTER_API_KEY || '';
+};
+
 export const callApi = async (endpoint, data) => {
     const API_KEY = await getApiKey();
 
@@ -73,22 +103,36 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/parse_story') {
-        if (!API_KEY || API_KEY === 'your-api-key-here') {
-            console.error('Google AI API key is not configured for story parsing');
-            throw new Error('API key not configured');
+        const OPENROUTER_KEY = await getOpenRouterApiKey();
+
+        if (!OPENROUTER_KEY) {
+            console.error('OpenRouter API key is not configured for story parsing');
+            throw new Error('OpenRouter API key not configured');
         }
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
         const systemPrompt = `You are a Master AI Cinematographer. Your task is to transform a written story into a detailed, professional cinematic blueprint in a structured JSON format. Analyze the narrative and emotional arcs to make expert cinematographic decisions. For each narrative beat, provide a sequence of specific shot recommendations. Each recommendation MUST include: 'shot_type', 'caption', 'lens_choice', 'aperture', and 'camera_movement'. The final output MUST be a single, valid JSON object with no markdown. The JSON structure should follow this schema: { "story_title": "...", "logline": "...", "cast_refs": { "[CHARACTER_NAME]": { "name": "...", "description": "..." } }, "scenes": [ { "scene_title": "...", "location": "...", "description": "...", "mood": "...", "lighting_setup": "...", "color_palette": "...", "beats": [ { "beat_title": "...", "description": "...", "shot_recommendations": [ { "shot_type": "...", "caption": "...", "lens_choice": "...", "aperture": "...", "camera_movement": "..." } ] } ] } ] }`;
 
         const payload = {
-            contents: [{ parts: [{ text: systemPrompt }, { text: `Story to parse: ${data.story}` }] }],
-            generationConfig: { responseMimeType: "application/json" }
+            model: 'tngtech/deepseek-r1t2-chimera:free',
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `Story to parse: ${data.story}` }
+            ],
+            response_format: { type: 'json_object' }
         };
 
         try {
-            console.log('Parsing story with Gemini...');
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            console.log('Parsing story with OpenRouter (DeepSeek)...');
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Tumdah'
+                },
+                body: JSON.stringify(payload)
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -97,7 +141,7 @@ export const callApi = async (endpoint, data) => {
             }
 
             const result = await response.json();
-            let text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            let text = result?.choices?.[0]?.message?.content;
 
             if (!text) {
                 console.error('No text in response:', result);
@@ -105,7 +149,7 @@ export const callApi = async (endpoint, data) => {
             }
 
             text = text.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
-            console.log('Story parsed successfully');
+            console.log('Story parsed successfully with OpenRouter');
             return JSON.parse(text);
         } catch (error) {
             console.error("Story parsing error:", error);
@@ -114,12 +158,12 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/generate_story') {
-        if (!API_KEY || API_KEY === 'your-api-key-here') {
-            console.error('Google AI API key is not configured for story generation');
+        const OPENROUTER_KEY = await getOpenRouterApiKey();
+
+        if (!OPENROUTER_KEY) {
+            console.error('OpenRouter API key is not configured for story generation');
             return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
         }
-
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
 
         const userIdea = (data.storyIdea || '').trim();
 
@@ -164,14 +208,21 @@ export const callApi = async (endpoint, data) => {
         }
 
         const payload = {
-            contents: [{ parts: [{ text: systemPrompt }] }]
+            model: 'tngtech/deepseek-r1t2-chimera:free',
+            messages: [{ role: 'user', content: systemPrompt }],
+            max_tokens: 4000
         };
 
         try {
-            console.log('Generating story with Gemini...', userIdea ? `Input length: ${userIdea.length} chars` : 'Random story');
-            const response = await fetch(apiUrl, {
+            console.log('Generating story with OpenRouter (DeepSeek)...', userIdea ? `Input length: ${userIdea.length} chars` : 'Random story');
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${OPENROUTER_KEY}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': window.location.origin,
+                    'X-Title': 'Tumdah'
+                },
                 body: JSON.stringify(payload),
                 signal: AbortSignal.timeout(60000)
             });
@@ -183,10 +234,10 @@ export const callApi = async (endpoint, data) => {
             }
 
             const result = await response.json();
-            const storyText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            const storyText = result?.choices?.[0]?.message?.content;
 
             if (storyText) {
-                console.log('Story generated successfully, length:', storyText.length);
+                console.log('Story generated successfully with OpenRouter, length:', storyText.length);
                 return storyText;
             }
 
@@ -196,14 +247,14 @@ export const callApi = async (endpoint, data) => {
             console.error("Story generation error:", error.message, error);
 
             if (error.message && error.message.includes('quota')) {
-                return `❌ ERROR: Google AI API quota exceeded.\n\n${error.message}\n\nPlease wait a few minutes and try again, or check your API quota at: https://aistudio.google.com/apikey`;
+                return `❌ ERROR: OpenRouter API quota exceeded.\n\n${error.message}\n\nPlease wait a few minutes and try again.`;
             }
 
             if (error.message && error.message.includes('API key')) {
-                return `❌ ERROR: Invalid API key.\n\n${error.message}\n\nPlease check your Google AI API key in the Admin panel.`;
+                return `❌ ERROR: Invalid API key.\n\n${error.message}\n\nPlease check your OpenRouter API key in the Admin panel.`;
             }
 
-            return `❌ ERROR: Story generation failed.\n\n${error.message}\n\nPlease check the browser console (F12) for more details, or verify your API key in the Admin panel.`;
+            return `❌ ERROR: Story generation failed.\n\n${error.message}\n\nPlease check the browser console (F12) for more details, or verify your OpenRouter API key in the Admin panel.`;
         }
     }
 
