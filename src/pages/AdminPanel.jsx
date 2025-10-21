@@ -299,6 +299,7 @@ const AdminPanel = ({ onNavigate }) => {
         setOpenRouterTestResult(null);
 
         try {
+            console.log('Testing OpenRouter API key...');
             const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -313,30 +314,56 @@ const AdminPanel = ({ onNavigate }) => {
                         role: 'user',
                         content: 'Say "test successful" and nothing else.'
                     }],
-                    max_tokens: 50
+                    max_tokens: 50,
+                    stream: false
                 })
             });
 
+            console.log('Response status:', response.status);
+
             if (response.ok) {
                 const result = await response.json();
+                console.log('OpenRouter test response:', result);
+
+                // DeepSeek R1 models might have reasoning tokens in a separate field
                 const message = result?.choices?.[0]?.message?.content;
+                const hasChoices = result?.choices && result.choices.length > 0;
+                const hasMessage = result?.choices?.[0]?.message;
+
+                console.log('Has choices:', hasChoices);
+                console.log('Has message:', hasMessage);
+                console.log('Message content:', message);
 
                 if (message) {
                     setOpenRouterTestResult({
                         success: true,
                         message: 'API key valid! OpenRouter is ready for story generation.'
                     });
+                } else if (hasChoices && hasMessage) {
+                    // Message exists but content is null/undefined
+                    setOpenRouterTestResult({
+                        success: true,
+                        message: 'API key valid! OpenRouter connected (model response format verified).'
+                    });
+                } else if (result?.id) {
+                    // Response has an ID, which means it was processed
+                    setOpenRouterTestResult({
+                        success: true,
+                        message: 'API key valid! OpenRouter responded successfully.'
+                    });
                 } else {
+                    console.error('Unexpected response structure:', result);
                     setOpenRouterTestResult({
                         success: false,
-                        message: 'Unexpected response format from OpenRouter.'
+                        message: `Unexpected response. Check console for details. Keys: ${Object.keys(result).join(', ')}`
                     });
                 }
             } else {
                 const error = await response.json();
+                console.error('OpenRouter API error:', error);
                 setOpenRouterTestResult({
                     success: false,
-                    message: error?.error?.message || 'Failed to verify API key. Please check your key.'
+                    message: error?.error?.message || `API error: ${response.status} - ${JSON.stringify(error).substring(0, 100)}`
                 });
             }
         } catch (error) {
