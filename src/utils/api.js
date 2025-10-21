@@ -175,7 +175,16 @@ Your task: Expand this idea into a complete, engaging, and cinematic story. Foll
             throw new Error('No story text in API response');
         } catch (error) {
             console.error("Story generation error:", error.message, error);
-            return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
+
+            if (error.message && error.message.includes('quota')) {
+                return `❌ ERROR: Google AI API quota exceeded.\n\n${error.message}\n\nPlease wait a few minutes and try again, or check your API quota at: https://aistudio.google.com/apikey`;
+            }
+
+            if (error.message && error.message.includes('API key')) {
+                return `❌ ERROR: Invalid API key.\n\n${error.message}\n\nPlease check your Google AI API key in the Admin panel.`;
+            }
+
+            return `❌ ERROR: Story generation failed.\n\n${error.message}\n\nPlease check the browser console (F12) for more details, or verify your API key in the Admin panel.`;
         }
     }
 
