@@ -241,7 +241,7 @@ const AdminPanel = ({ onNavigate }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-blue-50/30">
-            <div className="border-b border-neutral-200 bg-white/80 backdrop-blur-xl sticky top-0 z-40">
+            <div className="border-b border-neutral-200 bg-white/80 backdrop-blur-xl">
                 <div className="max-w-[1600px] mx-auto px-8 py-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-4">
