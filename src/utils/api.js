@@ -121,15 +121,25 @@ export const callApi = async (endpoint, data) => {
 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
 
-        const userIdea = data.storyIdea || '';
+        const userIdea = (data.storyIdea || '').trim();
 
         let systemPrompt;
-        if (userIdea.trim()) {
-            systemPrompt = `You are a story architect and master narrator. The user has provided this story idea or concept:
+        if (userIdea) {
+            const isLongStory = userIdea.length > 500;
+
+            if (isLongStory) {
+                systemPrompt = `You are a story architect and master narrator. The user has provided an existing story:
+
+"${userIdea.substring(0, 3000)}"
+
+Your task: Rewrite and enhance this story. Improve the pacing, add more vivid details and sensory descriptions, deepen character development, heighten dramatic tension, and ensure a compelling narrative arc. Keep the core concept and plot but elevate the prose to professional, cinematic quality. Output approximately 1000-1500 words.`;
+            } else {
+                systemPrompt = `You are a story architect and master narrator. The user has provided this story idea or concept:
 
 "${userIdea}"
 
 Your task: Expand this idea into a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose (not an outline), feel emotionally resonant, and be approximately 800-1500 words. Stay true to the user's original concept while enriching it with vivid details, compelling characters, and dramatic tension.`;
+            }
         } else {
             systemPrompt = "You are a story architect and master narrator. Generate a complete, engaging, and cinematic story. Follow professional storytelling rules: create a protagonist with clear goals, build the plot around cause-and-effect, escalate stakes, introduce conflict, and tie it all to a universal theme. The story should be delivered in narrative prose, not an outline, and feel emotionally resonant.";
         }
@@ -139,13 +149,18 @@ Your task: Expand this idea into a complete, engaging, and cinematic story. Foll
         };
 
         try {
-            console.log('Generating story with Gemini...', userIdea ? `Based on idea: "${userIdea.substring(0, 50)}..."` : 'Random story');
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            console.log('Generating story with Gemini...', userIdea ? `Input length: ${userIdea.length} chars` : 'Random story');
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(60000)
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('Story generation failed:', errorData?.error?.message || response.status, errorData);
-                throw new Error(`API call failed: ${response.status}`);
+                throw new Error(errorData?.error?.message || `API call failed: ${response.status}`);
             }
 
             const result = await response.json();
@@ -157,9 +172,9 @@ Your task: Expand this idea into a complete, engaging, and cinematic story. Foll
             }
 
             console.error('No text in story response:', result);
-            return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
+            throw new Error('No story text in API response');
         } catch (error) {
-            console.error("Story generation error:", error);
+            console.error("Story generation error:", error.message, error);
             return "A lone astronaut drifts in the silent void, tethered to her ship. A strange, glowing nebula appears ahead, pulsing with an unnatural light. She decides to investigate, her curiosity overriding her fear.";
         }
     }
