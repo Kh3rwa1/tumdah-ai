@@ -1,4 +1,19 @@
-const getApiKey = () => {
+const getApiKey = async () => {
+    try {
+        const { supabase } = await import('./supabase');
+        const { data, error } = await supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', 'google_ai_api_key')
+            .maybeSingle();
+
+        if (!error && data?.value?.api_key) {
+            return data.value.api_key;
+        }
+    } catch (e) {
+        console.error('Failed to load API key from Supabase:', e);
+    }
+
     const savedSettings = localStorage.getItem('adminSettings');
     if (savedSettings) {
         try {
@@ -7,14 +22,14 @@ const getApiKey = () => {
                 return settings.googleAiApiKey;
             }
         } catch (e) {
-            console.error('Failed to load settings:', e);
+            console.error('Failed to load settings from localStorage:', e);
         }
     }
     return import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
 };
 
 export const callApi = async (endpoint, data) => {
-    const API_KEY = getApiKey();
+    const API_KEY = await getApiKey();
     if (endpoint === '/export_storyboard') {
         return new Promise(resolve => setTimeout(() => resolve({ zipFile: { name: "storyboard.zip", size: 1024 * 1024 } }), 1000));
     }

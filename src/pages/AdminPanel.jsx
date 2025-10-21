@@ -78,16 +78,34 @@ const AdminPanel = ({ onNavigate }) => {
     };
 
     useEffect(() => {
-        const savedSettings = localStorage.getItem('adminSettings');
-        if (savedSettings) {
+        const loadSettings = async () => {
             try {
-                const parsed = JSON.parse(savedSettings);
-                setSettings(parsed);
-            } catch (e) {
-                console.error('Failed to load settings:', e);
-            }
-        }
+                const { supabase } = await import('../utils/supabase');
+                const { data } = await supabase
+                    .from('app_settings')
+                    .select('value')
+                    .eq('key', 'google_ai_api_key')
+                    .maybeSingle();
 
+                if (data?.value?.api_key) {
+                    setSettings(prev => ({ ...prev, googleAiApiKey: data.value.api_key }));
+                }
+            } catch (e) {
+                console.error('Failed to load API key from Supabase:', e);
+            }
+
+            const savedSettings = localStorage.getItem('adminSettings');
+            if (savedSettings) {
+                try {
+                    const parsed = JSON.parse(savedSettings);
+                    setSettings(prev => ({ ...prev, ...parsed }));
+                } catch (e) {
+                    console.error('Failed to load settings from localStorage:', e);
+                }
+            }
+        };
+
+        loadSettings();
         loadData();
 
         const refreshInterval = setInterval(() => {
@@ -97,11 +115,35 @@ const AdminPanel = ({ onNavigate }) => {
         return () => clearInterval(refreshInterval);
     }, []);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         try {
             localStorage.setItem('adminSettings', JSON.stringify(settings));
             if (settings.googleAiApiKey) {
                 localStorage.setItem('VITE_GOOGLE_AI_API_KEY', settings.googleAiApiKey);
+
+                const { supabase } = await import('../utils/supabase');
+                const { data: existing } = await supabase
+                    .from('app_settings')
+                    .select('id')
+                    .eq('key', 'google_ai_api_key')
+                    .maybeSingle();
+
+                if (existing) {
+                    await supabase
+                        .from('app_settings')
+                        .update({ value: { api_key: settings.googleAiApiKey } })
+                        .eq('id', existing.id);
+                } else {
+                    await supabase
+                        .from('app_settings')
+                        .insert([{
+                            key: 'google_ai_api_key',
+                            value: { api_key: settings.googleAiApiKey },
+                            description: 'Google AI API key for image generation',
+                            category: 'api',
+                            is_sensitive: true
+                        }]);
+                }
             }
             setSavedStatus('success');
             setTimeout(() => setSavedStatus(null), 3000);
@@ -122,30 +164,49 @@ const AdminPanel = ({ onNavigate }) => {
         setApiTestResult(null);
 
         try {
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${settings.googleAiApiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: 'Hello' }] }]
-                    })
-                }
-            );
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${settings.googleAiApiKey}`;
+
+            const response = await fetch(testUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: 'A simple red circle' }]
+                    }],
+                    generationConfig: {
+                        imageConfig: {
+                            aspectRatio: "1:1"
+                        }
+                    }
+                })
+            });
 
             if (response.ok) {
-                setApiTestResult({ success: true, message: 'API key is valid and working!' });
+                const result = await response.json();
+                const hasImageData = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
+
+                if (hasImageData) {
+                    setApiTestResult({
+                        success: true,
+                        message: 'API key is valid! Image generation model working.'
+                    });
+                } else {
+                    setApiTestResult({
+                        success: false,
+                        message: 'API key valid but image generation failed. Check model access.'
+                    });
+                }
             } else {
                 const error = await response.json();
                 setApiTestResult({
                     success: false,
-                    message: error?.error?.message || 'API key validation failed'
+                    message: error?.error?.message || `Failed: ${response.status}`
                 });
             }
         } catch (error) {
             setApiTestResult({
                 success: false,
-                message: 'Network error. Please check your connection.'
+                message: `Error: ${error.message}`
             });
         } finally {
             setTestingApi(false);
@@ -447,20 +508,26 @@ const AdminPanel = ({ onNavigate }) => {
                                             )}
                                         </div>
                                     </div>
-                                    <p className="mt-3 text-sm text-neutral-500 flex items-start gap-2">
-                                        <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                        <span>
-                                            Get your API key from{' '}
-                                            <a
-                                                href="https://makersuite.google.com/app/apikey"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-blue-600 hover:text-blue-700 underline font-semibold"
-                                            >
-                                                Google AI Studio
-                                            </a>
-                                        </span>
-                                    </p>
+                                    <div className="mt-3 space-y-2">
+                                        <p className="text-sm text-neutral-500 flex items-start gap-2">
+                                            <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                            <span>
+                                                Get your API key from{' '}
+                                                <a
+                                                    href="https://makersuite.google.com/app/apikey"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:text-blue-700 underline font-semibold"
+                                                >
+                                                    Google AI Studio
+                                                </a>
+                                                {' '}and ensure your key has access to the <strong>Gemini 2.5 Flash Image</strong> model.
+                                            </span>
+                                        </p>
+                                        <p className="text-xs text-neutral-400 pl-6">
+                                            Testing uses the gemini-2.5-flash-image model for actual image generation validation.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
