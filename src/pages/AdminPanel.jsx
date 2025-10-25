@@ -38,6 +38,8 @@ const AdminPanel = ({ onNavigate }) => {
     });
     const [recentActivity, setRecentActivity] = useState([]);
     const [systemHealth, setSystemHealth] = useState([]);
+    const [errorLogs, setErrorLogs] = useState([]);
+    const [loadingErrors, setLoadingErrors] = useState(false);
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
@@ -138,6 +140,32 @@ const AdminPanel = ({ onNavigate }) => {
 
         return () => clearInterval(refreshInterval);
     }, []);
+
+    const loadErrorLogs = async () => {
+        setLoadingErrors(true);
+        try {
+            const { supabase } = await import('../utils/supabase');
+            const { data, error } = await supabase
+                .from('api_error_logs')
+                .select('*')
+                .order('timestamp', { ascending: false })
+                .limit(50);
+
+            if (!error && data) {
+                setErrorLogs(data);
+            }
+        } catch (e) {
+            console.error('Failed to load error logs:', e);
+        } finally {
+            setLoadingErrors(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'errors') {
+            loadErrorLogs();
+        }
+    }, [activeTab]);
 
     const handleSave = async () => {
         try {
@@ -273,22 +301,15 @@ const AdminPanel = ({ onNavigate }) => {
             }
 
             const error = await response.json();
-            console.error('[API Test] Failed:', error?.error?.message);
+            console.error('[API Test] Failed:', error);
 
             const errorMsg = error?.error?.message || '';
 
-            // Check for billing/quota issues
-            if (errorMsg.includes('quota') || errorMsg.includes('free_tier') || errorMsg.includes('limit: 0') || errorMsg.includes('billing')) {
-                setApiTestResult({
-                    success: false,
-                    message: `⚠️ Your API key requires billing enabled. Gemini 2.5 Flash Image may not be available in the free tier yet. Enable billing at: https://console.cloud.google.com/billing or create a new API key from a project with billing enabled.`
-                });
-            } else {
-                setApiTestResult({
-                    success: false,
-                    message: `❌ API test failed: ${errorMsg || 'Unknown error'}. Check console for details.`
-                });
-            }
+            setApiTestResult({
+                success: false,
+                message: `❌ API test failed: ${errorMsg || 'Unknown error'}`,
+                fullError: error
+            });
 
         } catch (error) {
             console.error('[API Test] Error:', error);
@@ -480,6 +501,16 @@ const AdminPanel = ({ onNavigate }) => {
                             }`}
                         >
                             Prompts
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('errors')}
+                            className={`px-3 sm:px-5 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 whitespace-nowrap ${
+                                activeTab === 'errors'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                                    : 'text-neutral-600 hover:bg-neutral-100'
+                            }`}
+                        >
+                            Error Logs {errorLogs.length > 0 && `(${errorLogs.length})`}
                         </button>
                     </div>
                 </div>
@@ -694,17 +725,31 @@ const AdminPanel = ({ onNavigate }) => {
                                                 {testingApi ? 'Testing...' : 'Test API Key'}
                                             </Button>
                                             {apiTestResult && (
-                                                <div className={`flex items-center gap-2 px-3 py-2 sm:px-4 rounded-xl text-xs sm:text-sm font-semibold ${
+                                                <div className={`flex-1 px-3 py-2 sm:px-4 rounded-xl text-xs sm:text-sm ${
                                                     apiTestResult.success
                                                         ? 'bg-emerald-50 text-emerald-700'
                                                         : 'bg-red-50 text-red-700'
                                                 }`}>
-                                                    {apiTestResult.success ? (
-                                                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                    ) : (
-                                                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
-                                                    )}
-                                                    <span className="break-words">{apiTestResult.message}</span>
+                                                    <div className="flex items-start gap-2">
+                                                        {apiTestResult.success ? (
+                                                            <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" />
+                                                        ) : (
+                                                            <XCircle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" />
+                                                        )}
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold break-words">{apiTestResult.message}</p>
+                                                            {apiTestResult.fullError && (
+                                                                <details className="mt-2">
+                                                                    <summary className="text-xs cursor-pointer hover:opacity-70">
+                                                                        View full error details
+                                                                    </summary>
+                                                                    <pre className="text-xs mt-2 p-2 bg-red-100 rounded overflow-x-auto">
+                                                                        {JSON.stringify(apiTestResult.fullError, null, 2)}
+                                                                    </pre>
+                                                                </details>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1116,6 +1161,91 @@ const AdminPanel = ({ onNavigate }) => {
                                         description="Style templates for AI image generation"
                                     />
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : activeTab === 'errors' ? (
+                    <div className="space-y-6 sm:space-y-8">
+                        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-neutral-200 overflow-hidden">
+                            <div className="p-4 sm:p-6 lg:p-8 border-b border-neutral-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-800">API Error Logs</h2>
+                                    <Button onClick={loadErrorLogs} disabled={loadingErrors}>
+                                        {loadingErrors ? 'Loading...' : 'Refresh'}
+                                    </Button>
+                                </div>
+                                <p className="text-xs sm:text-sm lg:text-base text-neutral-600">
+                                    Real-time error logs from API calls. View detailed error messages and stack traces for debugging.
+                                </p>
+                            </div>
+
+                            <div className="p-4 sm:p-6 lg:p-8">
+                                {loadingErrors ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <div className="text-center">
+                                            <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                                            <p className="text-neutral-600">Loading error logs...</p>
+                                        </div>
+                                    </div>
+                                ) : errorLogs.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                                        <p className="text-lg font-semibold text-neutral-800 mb-2">No Errors Found</p>
+                                        <p className="text-neutral-600">All API calls are working correctly!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {errorLogs.map((log) => (
+                                            <div key={log.id} className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                                                        <span className="font-semibold text-red-900">{log.error_type}</span>
+                                                        {log.status_code && (
+                                                            <span className="px-2 py-0.5 bg-red-200 text-red-800 rounded text-xs font-mono">
+                                                                {log.status_code}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-xs text-red-700">
+                                                        {new Date(log.timestamp).toLocaleString()}
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-2 mt-3">
+                                                    {log.error_message && (
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-red-900 mb-1">Error Message:</p>
+                                                            <p className="text-sm text-red-800 bg-red-100 p-2 rounded font-mono overflow-x-auto">
+                                                                {log.error_message}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {log.prompt && (
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-red-900 mb-1">Prompt:</p>
+                                                            <p className="text-sm text-red-800 bg-red-100 p-2 rounded overflow-x-auto">
+                                                                {log.prompt}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {log.full_error && (
+                                                        <details className="mt-2">
+                                                            <summary className="text-xs font-semibold text-red-900 cursor-pointer hover:text-red-700">
+                                                                Full Error Details (click to expand)
+                                                            </summary>
+                                                            <pre className="text-xs text-red-800 bg-red-100 p-2 rounded mt-2 overflow-x-auto">
+                                                                {JSON.stringify(log.full_error, null, 2)}
+                                                            </pre>
+                                                        </details>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

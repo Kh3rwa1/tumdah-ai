@@ -428,13 +428,28 @@ export const callApi = async (endpoint, data) => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('[Image Gen] API failed:', errorData?.error?.message || response.status, errorData);
-
                 const errorMsg = errorData?.error?.message || '';
 
-                // Check for quota/billing issues
-                if (errorMsg.includes('quota') || errorMsg.includes('free_tier') || errorMsg.includes('limit: 0')) {
-                    throw new Error('BILLING_REQUIRED: Gemini 2.5 Flash Image (Nanobanana) requires a Google Cloud project with billing enabled. Free tier might not support image generation yet. Please enable billing at https://console.cloud.google.com/billing');
+                console.error('[Image Gen] API failed:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorMessage: errorMsg,
+                    fullError: errorData
+                });
+
+                // Log error to Supabase for admin visibility
+                try {
+                    const { supabase } = await import('./supabase');
+                    await supabase.from('api_error_logs').insert({
+                        error_type: 'image_generation',
+                        error_message: errorMsg,
+                        status_code: response.status,
+                        full_error: errorData,
+                        prompt: data.prompt?.substring(0, 500),
+                        timestamp: new Date().toISOString()
+                    });
+                } catch (logError) {
+                    console.warn('[Image Gen] Failed to log error to database:', logError);
                 }
 
                 throw new Error(errorMsg || `Generation failed: ${response.status}`);
