@@ -330,16 +330,20 @@ export const callApi = async (endpoint, data) => {
     }
 
     if (endpoint === '/generate_image') {
+        console.log('[Image Gen] API Key status:', API_KEY ? `Present (${API_KEY.substring(0, 10)}...)` : 'Missing');
+
         if (!API_KEY || API_KEY === 'your-api-key-here') {
-            console.warn('Google AI API key not configured - image generation will use fallback');
+            console.warn('[Image Gen] Google AI API key not configured - will use placeholder images');
             throw new Error('API key not configured');
         }
 
         try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${API_KEY}`;
+            // Use Gemini 2.5 Flash Image (Nanobanana) for actual image generation
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
 
             const parts = [];
 
+            // Add input images if provided (for image-to-image)
             if (data.image) {
                 parts.push({
                     inline_data: {
@@ -358,51 +362,67 @@ export const callApi = async (endpoint, data) => {
                 });
             }
 
-            const enhancedPrompt = `${data.prompt}
-
-CRITICAL INSTRUCTIONS:
-- You MUST generate and return an actual image, not text
-- This is an image generation task, not a text response task
-- Analyze the provided images and create a new photorealistic image following the prompt
-- Output format: Return the generated image as base64 encoded data
-- DO NOT describe what you would do - GENERATE THE ACTUAL IMAGE`;
-
-            parts.push({ text: enhancedPrompt });
+            // Add the text prompt
+            parts.push({ text: data.prompt });
 
             const payload = {
-                contents: [{ parts }]
+                contents: [{ parts }],
+                generationConfig: {
+                    responseModalities: ['Image'],
+                    temperature: 1.0,
+                    topP: 0.95,
+                    topK: 40
+                }
             };
 
-            console.log(`Attempting Gemini image generation with prompt length: ${data.prompt.length}`);
+            console.log(`[Image Gen] Using Nanobanana (gemini-2.5-flash-image) with prompt length: ${data.prompt.length}`);
+            console.log('[Image Gen] Has input image:', !!data.image);
+            console.log('[Image Gen] Has style image:', !!data.styleImage);
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': API_KEY
+                },
                 body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(45000)
+                signal: AbortSignal.timeout(60000)
             });
+
+            console.log('[Image Gen] Response status:', response.status);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.warn('Gemini API failed:', errorData?.error?.message || response.status, errorData);
-                throw new Error(errorData?.error?.message || 'Generation failed');
+                console.error('[Image Gen] API failed:', errorData?.error?.message || response.status, errorData);
+                throw new Error(errorData?.error?.message || `Generation failed: ${response.status}`);
             }
 
             const result = await response.json();
-            console.log('Gemini response structure:', JSON.stringify(result).substring(0, 500));
+            console.log('[Image Gen] Response structure:', {
+                hasCandidates: !!result?.candidates,
+                candidatesLength: result?.candidates?.length,
+                firstCandidateKeys: result?.candidates?.[0] ? Object.keys(result.candidates[0]) : []
+            });
 
+            // Extract the generated image
             const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
 
             if (base64Data) {
-                console.log('Successfully generated image with Gemini');
+                console.log('[Image Gen] Success! Generated image with Nanobanana, size:', base64Data.length);
                 return `data:image/png;base64,${base64Data}`;
             }
 
-            console.warn('No image data in response, likely text-only model response');
-            throw new Error('Model returned text instead of image');
+            // Check if we got text instead
+            const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (textResponse) {
+                console.error('[Image Gen] Received text instead of image:', textResponse?.substring(0, 200));
+            }
+
+            console.error('[Image Gen] No image data in response. Full response:', JSON.stringify(result).substring(0, 500));
+            throw new Error('No image data in API response. Your API key may not have access to Gemini 2.5 Flash Image (Nanobanana).');
 
         } catch (error) {
-            console.warn('Image generation error:', error.message);
+            console.error('[Image Gen] Error:', error.message);
             throw error;
         }
     }
