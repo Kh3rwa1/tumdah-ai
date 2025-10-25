@@ -216,78 +216,79 @@ const AdminPanel = ({ onNavigate }) => {
         setTestingApi(true);
         setApiTestResult(null);
 
-        const models = [
-            'imagen-3.0-generate-001',
-            'gemini-2.0-flash-exp-imagen',
-            'gemini-2.0-flash-exp'
-        ];
+        try {
+            // Test Gemini 2.5 Flash Image (Nanobanana) - the actual image generation model
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent`;
 
-        for (const model of models) {
-            try {
-                const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${settings.googleAiApiKey}`;
+            const payload = {
+                contents: [{
+                    parts: [{ text: 'Generate a simple red circle on white background' }]
+                }],
+                generationConfig: {
+                    responseModalities: ['Image'],
+                    temperature: 1.0
+                }
+            };
 
-                const isImageModel = model.includes('imagen');
-                const payload = isImageModel ? {
-                    contents: [{
-                        parts: [{ text: 'A simple red circle on white background' }]
-                    }],
-                    generationConfig: {
-                        imageConfig: {
-                            aspectRatio: "1:1"
-                        }
-                    }
-                } : {
-                    contents: [{
-                        parts: [{ text: 'Say "test successful" and nothing else.' }]
-                    }]
-                };
+            console.log('[API Test] Testing gemini-2.5-flash-image (Nanobanana)...');
 
-                const response = await fetch(testUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+            const response = await fetch(testUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': settings.googleAiApiKey
+                },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(30000)
+            });
 
-                if (response.ok) {
-                    const result = await response.json();
+            console.log('[API Test] Response status:', response.status);
 
-                    if (isImageModel) {
-                        const hasImageData = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
-                        if (hasImageData) {
-                            setApiTestResult({
-                                success: true,
-                                message: `API key valid! Using ${model} for image generation.`
-                            });
-                            setTestingApi(false);
-                            return;
-                        }
-                    } else {
-                        const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (textResponse) {
-                            setApiTestResult({
-                                success: true,
-                                message: `API key valid! Using ${model}. Note: Image models may have limited availability.`
-                            });
-                            setTestingApi(false);
-                            return;
-                        }
-                    }
+            if (response.ok) {
+                const result = await response.json();
+                console.log('[API Test] Response:', result);
+
+                const hasImageData = result?.candidates?.[0]?.content?.parts?.find(p => p.inline_data)?.inline_data?.data;
+
+                if (hasImageData) {
+                    setApiTestResult({
+                        success: true,
+                        message: '✅ API key valid! Successfully tested Nanobanana (gemini-2.5-flash-image). Image generation is working!'
+                    });
+                    setTestingApi(false);
+                    return;
                 }
 
-                const error = await response.json();
-                console.warn(`Model ${model} failed:`, error?.error?.message);
-
-            } catch (error) {
-                console.warn(`Model ${model} error:`, error);
-                continue;
+                // If no image data, check what we got
+                const textResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (textResponse) {
+                    console.warn('[API Test] Received text instead of image:', textResponse);
+                    setApiTestResult({
+                        success: false,
+                        message: `⚠️ API key valid, but model returned text instead of image. Your API key may not have access to Nanobanana image generation yet.`
+                    });
+                    setTestingApi(false);
+                    return;
+                }
             }
-        }
 
-        setApiTestResult({
-            success: false,
-            message: 'API key may be valid but image models are not accessible. Your key might work for text only.'
-        });
-        setTestingApi(false);
+            const error = await response.json();
+            console.error('[API Test] Failed:', error?.error?.message);
+
+            setApiTestResult({
+                success: false,
+                message: `❌ API test failed: ${error?.error?.message || 'Unknown error'}. Check console for details.`
+            });
+
+        } catch (error) {
+            console.error('[API Test] Error:', error);
+            setApiTestResult({
+                success: false,
+                message: `❌ Error testing API: ${error.message}`
+            });
+        } finally {
+            setTestingApi(false);
+        }
     };
 
     const testOpenRouterKey = async () => {
@@ -705,8 +706,8 @@ const AdminPanel = ({ onNavigate }) => {
                                                 </a>
                                             </span>
                                         </p>
-                                        <p className="text-[10px] sm:text-xs text-amber-600 pl-5 sm:pl-6 font-medium">
-                                            Note: Google's image generation models (Imagen) have very limited availability. Most API keys currently show placeholder images. The app uses Gemini for text analysis and will generate real images when models become available in your region.
+                                        <p className="text-[10px] sm:text-xs text-blue-600 pl-5 sm:pl-6 font-medium">
+                                            The app uses Gemini 2.5 Flash Image (Nanobanana) for image generation. Use the "Test API Key" button to verify your key has access to image generation.
                                         </p>
                                     </div>
                                 </div>
