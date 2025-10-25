@@ -1,4 +1,6 @@
 const getApiKey = async () => {
+    console.log('[API Key] Loading Google AI API key...');
+
     try {
         const { supabase } = await import('./supabase');
         const { data, error } = await supabase
@@ -7,28 +9,54 @@ const getApiKey = async () => {
             .eq('key', 'google_ai_api_key')
             .maybeSingle();
 
+        console.log('[API Key] Supabase query result:', {
+            hasData: !!data,
+            hasError: !!error,
+            hasApiKey: !!data?.value?.api_key,
+            error: error?.message
+        });
+
         if (!error && data?.value?.api_key) {
+            console.log('[API Key] Found in Supabase:', data.value.api_key.substring(0, 10) + '...');
             return data.value.api_key;
         }
     } catch (e) {
-        console.error('Failed to load API key from Supabase:', e);
+        console.error('[API Key] Failed to load from Supabase:', e);
     }
 
+    // Check localStorage with the key used by AdminPanel
+    const directKey = localStorage.getItem('VITE_GOOGLE_AI_API_KEY');
+    console.log('[API Key] Checking localStorage (VITE_GOOGLE_AI_API_KEY):', !!directKey);
+
+    if (directKey) {
+        console.log('[API Key] Found in localStorage:', directKey.substring(0, 10) + '...');
+        return directKey;
+    }
+
+    // Fallback to old adminSettings format
     const savedSettings = localStorage.getItem('adminSettings');
+    console.log('[API Key] Checking localStorage (adminSettings):', !!savedSettings);
+
     if (savedSettings) {
         try {
             const settings = JSON.parse(savedSettings);
             if (settings.googleAiApiKey) {
+                console.log('[API Key] Found in adminSettings:', settings.googleAiApiKey.substring(0, 10) + '...');
                 return settings.googleAiApiKey;
             }
         } catch (e) {
-            console.error('Failed to load settings from localStorage:', e);
+            console.error('[API Key] Failed to load from localStorage:', e);
         }
     }
-    return import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
+
+    const envKey = import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
+    console.log('[API Key] Using env var:', envKey ? envKey.substring(0, 10) + '...' : 'None');
+    return envKey;
 };
 
 const getOpenRouterApiKey = async () => {
+    console.log('[OpenRouter Key] Loading API key...');
+
     try {
         const { supabase } = await import('./supabase');
         const { data, error } = await supabase
@@ -37,25 +65,46 @@ const getOpenRouterApiKey = async () => {
             .eq('key', 'openrouter_api_key')
             .maybeSingle();
 
+        console.log('[OpenRouter Key] Supabase query result:', {
+            hasData: !!data,
+            hasError: !!error,
+            hasApiKey: !!data?.value?.api_key
+        });
+
         if (!error && data?.value?.api_key) {
+            console.log('[OpenRouter Key] Found in Supabase:', data.value.api_key.substring(0, 10) + '...');
             return data.value.api_key;
         }
     } catch (e) {
-        console.error('Failed to load OpenRouter API key from Supabase:', e);
+        console.error('[OpenRouter Key] Failed to load from Supabase:', e);
     }
 
+    // Check localStorage with the key used by AdminPanel
+    const directKey = localStorage.getItem('VITE_OPENROUTER_API_KEY');
+    console.log('[OpenRouter Key] Checking localStorage (VITE_OPENROUTER_API_KEY):', !!directKey);
+
+    if (directKey) {
+        console.log('[OpenRouter Key] Found in localStorage:', directKey.substring(0, 10) + '...');
+        return directKey;
+    }
+
+    // Fallback to old adminSettings format
     const savedSettings = localStorage.getItem('adminSettings');
     if (savedSettings) {
         try {
             const settings = JSON.parse(savedSettings);
             if (settings.openrouterApiKey) {
+                console.log('[OpenRouter Key] Found in adminSettings:', settings.openrouterApiKey.substring(0, 10) + '...');
                 return settings.openrouterApiKey;
             }
         } catch (e) {
-            console.error('Failed to load settings from localStorage:', e);
+            console.error('[OpenRouter Key] Failed to load from localStorage:', e);
         }
     }
-    return import.meta.env.VITE_OPENROUTER_API_KEY || '';
+
+    const envKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+    console.log('[OpenRouter Key] Using env var:', envKey ? envKey.substring(0, 10) + '...' : 'None');
+    return envKey;
 };
 
 export const callApi = async (endpoint, data) => {
