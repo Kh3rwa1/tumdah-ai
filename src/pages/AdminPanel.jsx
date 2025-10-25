@@ -275,17 +275,35 @@ const AdminPanel = ({ onNavigate }) => {
             const error = await response.json();
             console.error('[API Test] Failed:', error?.error?.message);
 
-            setApiTestResult({
-                success: false,
-                message: `❌ API test failed: ${error?.error?.message || 'Unknown error'}. Check console for details.`
-            });
+            const errorMsg = error?.error?.message || '';
+
+            // Check for billing/quota issues
+            if (errorMsg.includes('quota') || errorMsg.includes('free_tier') || errorMsg.includes('limit: 0') || errorMsg.includes('billing')) {
+                setApiTestResult({
+                    success: false,
+                    message: `⚠️ Your API key requires billing enabled. Gemini 2.5 Flash Image may not be available in the free tier yet. Enable billing at: https://console.cloud.google.com/billing or create a new API key from a project with billing enabled.`
+                });
+            } else {
+                setApiTestResult({
+                    success: false,
+                    message: `❌ API test failed: ${errorMsg || 'Unknown error'}. Check console for details.`
+                });
+            }
 
         } catch (error) {
             console.error('[API Test] Error:', error);
-            setApiTestResult({
-                success: false,
-                message: `❌ Error testing API: ${error.message}`
-            });
+
+            if (error.name === 'AbortError') {
+                setApiTestResult({
+                    success: false,
+                    message: `❌ Request timed out. Please check your internet connection.`
+                });
+            } else {
+                setApiTestResult({
+                    success: false,
+                    message: `❌ Error testing API: ${error.message}`
+                });
+            }
         } finally {
             setTestingApi(false);
         }

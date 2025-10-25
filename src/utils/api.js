@@ -49,9 +49,44 @@ const getApiKey = async () => {
         }
     }
 
-    const envKey = import.meta.env.VITE_GOOGLE_AI_API_KEY || '';
-    console.log('[API Key] Using env var:', envKey ? envKey.substring(0, 10) + '...' : 'None');
-    return envKey;
+    console.log('[API Key] No Google AI API key found');
+    return null;
+};
+
+const getFalApiKey = async () => {
+    console.log('[FAL API Key] Loading fal.ai API key...');
+
+    try {
+        const { supabase } = await import('./supabase');
+        const { data, error } = await supabase
+            .from('app_settings')
+            .select('value')
+            .eq('key', 'fal_ai_api_key')
+            .maybeSingle();
+
+        if (!error && data?.value?.api_key) {
+            console.log('[FAL API Key] Found in Supabase:', data.value.api_key.substring(0, 10) + '...');
+            return data.value.api_key;
+        }
+    } catch (e) {
+        console.error('[FAL API Key] Failed to load from Supabase:', e);
+    }
+
+    const savedSettings = localStorage.getItem('adminSettings');
+    if (savedSettings) {
+        try {
+            const settings = JSON.parse(savedSettings);
+            if (settings.falAiApiKey) {
+                console.log('[FAL API Key] Found in localStorage:', settings.falAiApiKey.substring(0, 10) + '...');
+                return settings.falAiApiKey;
+            }
+        } catch (e) {
+            console.error('[FAL API Key] Failed to load from localStorage:', e);
+        }
+    }
+
+    console.log('[FAL API Key] No fal.ai API key found');
+    return null;
 };
 
 const getOpenRouterApiKey = async () => {
@@ -394,7 +429,15 @@ export const callApi = async (endpoint, data) => {
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 console.error('[Image Gen] API failed:', errorData?.error?.message || response.status, errorData);
-                throw new Error(errorData?.error?.message || `Generation failed: ${response.status}`);
+
+                const errorMsg = errorData?.error?.message || '';
+
+                // Check for quota/billing issues
+                if (errorMsg.includes('quota') || errorMsg.includes('free_tier') || errorMsg.includes('limit: 0')) {
+                    throw new Error('BILLING_REQUIRED: Gemini 2.5 Flash Image (Nanobanana) requires a Google Cloud project with billing enabled. Free tier might not support image generation yet. Please enable billing at https://console.cloud.google.com/billing');
+                }
+
+                throw new Error(errorMsg || `Generation failed: ${response.status}`);
             }
 
             const result = await response.json();
